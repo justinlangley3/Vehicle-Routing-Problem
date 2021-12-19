@@ -13,7 +13,7 @@ def readPackageCSV(file):
             # we don't care about lines that don't contain a package ID
             if re.match("[0-9]+", line[0]):
                 # our file was converted from .xlsx to .csv in Excel
-                # excel seems to have added ",,,,,,\n" to the end of each line in the .csv
+                # seems to have added ",,,,,,\n" to the end of each line in the .csv
                 data = line.strip(",,,,,,\n")
                 data = data.split(",")
                 out.append(data)
@@ -32,7 +32,7 @@ class MainWindow:
 
         text_package = tk.StringVar()
         text_package.set(files[0])
-        entry_package = ttk.Entry(master, textvar=text_package)
+        entry_package = ttk.Entry(master, textvariable=text_package)
         entry_package.grid(column=0, row=1, padx=10, pady=5)
 
         btn_package = ttk.Button(master, text='...',
@@ -44,7 +44,7 @@ class MainWindow:
 
         text_distance = tk.StringVar()
         text_distance.set(files[1])
-        entry_distance = ttk.Entry(master, textvar=text_distance)
+        entry_distance = ttk.Entry(master, textvariable=text_distance)
         entry_distance.grid(column=0, row=3, padx=10, pady=5)
 
         btn_distance = ttk.Button(master, text='...',
@@ -74,8 +74,8 @@ def check_for_data_files():
     distance_file = ''
     default_dir_ = pathlib.Path('./data/')
 
-    package_re = re.compile("package([0-9A-Za-z{[(\\\/\]\)}\-!@#\$%\^&_\+=,.'`~])*(.csv)")
-    distance_re = re.compile("distance([0-9A-Za-z{[(\\\/\]\)}\-!@#\$%\^&_\+=,.'`~])*(.csv)")
+    package_re = re.compile(r"package([0-9A-Za-z{[(\\/\])}\-!@#$%^&_+=,.'`~])*(.csv)")
+    distance_re = re.compile(r"distance([0-9A-Za-z{[(\\/\])}\-!@#$%^&_+=,.'`~])*(.csv)")
 
     for entry in os.listdir(default_dir_):
         if entry is None:
@@ -99,7 +99,7 @@ def main():
     # configure form size
     root.geometry(form_h + 'x' + form_v + '+' + center_h + '+' + center_v)
     root.title('WGUPS')
-    root.resizable(0, 0)
+    root.resizable(False, False)
     app = MainWindow(root)
     root.mainloop()
 
