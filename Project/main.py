@@ -6,7 +6,7 @@ from tkinter import filedialog
 from tkinter import ttk
 
 
-def readPackageCSV(file):
+def load_package_data(file):
     out = []
     with open(file, "r") as f:
         for line in f:
@@ -20,13 +20,13 @@ def readPackageCSV(file):
         return out
 
 
-def readDistanceCSV(file):
+def load_distance_data(file):
     return
 
 
 class MainWindow:
     def __init__(self, master: tk.Tk):
-        files = check_for_data_files()
+        files = check_for_data_sources()
         lbl_package = ttk.Label(master, text='Confirm packages.csv:')
         lbl_package.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
 
@@ -69,7 +69,7 @@ class ResultsWindow:
         return
 
 
-def check_for_data_files():
+def check_for_data_sources():
     package_file = ''
     distance_file = ''
     default_dir_ = pathlib.Path('./data/')
@@ -89,7 +89,7 @@ def check_for_data_files():
 
 
 def main():
-    check_for_data_files()
+    check_for_data_sources()
     root = tk.Tk()
     form_h = '240'  # form width
     form_v = '180'  # form height
