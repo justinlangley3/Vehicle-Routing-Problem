@@ -1,27 +1,11 @@
+import csv
 import os
 import pathlib
 import re
 import tkinter as tk
+from structures.HashTable import HashTable
 from tkinter import filedialog
 from tkinter import ttk
-
-
-def load_package_data(file):
-    out = []
-    with open(file, "r") as f:
-        for line in f:
-            # we don't care about lines that don't contain a package ID
-            if re.match("[0-9]+", line[0]):
-                # our file was converted from .xlsx to .csv in Excel
-                # seems to have added ",,,,,,\n" to the end of each line in the .csv
-                data = line.strip(",,,,,,\n")
-                data = data.split(",")
-                out.append(data)
-        return out
-
-
-def load_distance_data(file):
-    return
 
 
 class MainWindow:
@@ -32,10 +16,10 @@ class MainWindow:
 
         text_package = tk.StringVar()
         text_package.set(files[0])
-        entry_package = ttk.Entry(master, textvariable=text_package)
-        entry_package.grid(column=0, row=1, padx=10, pady=5)
+        entry_package = ttk.Entry(master, textvariable=text_package, width=40)
+        entry_package.grid(column=0, row=1, padx=5, pady=5)
 
-        btn_package = ttk.Button(master, text='...',
+        btn_package = ttk.Button(master, text='...', width=4,
                                  command=lambda: self.file_selection_diag(text_package))
         btn_package.grid(column=1, row=1, padx=0, pady=5)
 
@@ -44,14 +28,15 @@ class MainWindow:
 
         text_distance = tk.StringVar()
         text_distance.set(files[1])
-        entry_distance = ttk.Entry(master, textvariable=text_distance)
-        entry_distance.grid(column=0, row=3, padx=10, pady=5)
+        entry_distance = ttk.Entry(master, textvariable=text_distance, width=40)
+        entry_distance.grid(column=0, row=3, padx=5, pady=5)
 
-        btn_distance = ttk.Button(master, text='...',
+        btn_distance = ttk.Button(master, text='...', width=4,
                                   command=lambda: self.file_selection_diag(text_distance))
         btn_distance.grid(column=1, row=3, padx=0, pady=5)
 
-        btn_generate = ttk.Button(master, text='Generate Package Load Plan', command=lambda: self.generate_action())
+        btn_generate = ttk.Button(master, text='Generate Package Load Plan',
+                                  command=lambda: self.load_distance_data(text_package.get()))
         btn_generate.grid(column=0, columnspan=2, row=4, pady=10)
 
     @staticmethod
@@ -62,6 +47,31 @@ class MainWindow:
 
     def generate_action(self):
         return
+
+    @staticmethod
+    def load_package_data(path):
+        out = []
+        with open(path, "r") as f:
+            for line in f:
+                # we don't care about lines that don't contain a package ID
+                if re.match("[0-9]+", line[0]):
+                    # our file was converted from .xlsx to .csv in Excel
+                    # seems to have added ",,,,,,\n" to the end of each line in the .csv
+                    data = line.strip(",,,,,,\n")
+                    data = data.split(",")
+                    out.append(data)
+            return out
+
+    def load_distance_data(self, path):
+        self.parse_csv(path)
+        return
+
+    @staticmethod
+    def parse_csv(path):
+        with open(path, mode='r', encoding='utf-8') as f:
+            reader = csv.reader(f, dialect='excel')
+            data = list(reader)[8:]
+        print(data)
 
 
 class ResultsWindow:
@@ -89,9 +99,26 @@ def check_for_data_sources():
 
 
 def main():
+    val = 2**22
+    print(f"{val:,}")
+    ht = HashTable(val)
+    nums = [i for i in range(val)]
+    for num in nums:
+        ht.insert(key=num, data=num)
+
+    print('Done loading HashTable: \'ht\'\nSize: %s' % str(ht.buckets))
+
+    print('Search, key=1616: %s' % ht.search(key=1616))
+    ht.remove(1616)
+    print('Search, key=1616: %s' % ht.search(key=1616))
+    print('Search, key=1044231: %s' % ht.search(1044231))
+    print('Search, key=10000000: %s' % ht.search(10000000))
+    # print(ht.table[14])
+
     check_for_data_sources()
     root = tk.Tk()
-    form_h = '240'  # form width
+    print()
+    form_h = '380'  # form width
     form_v = '180'  # form height
     # math for placing the form horizontally and vertically centered
     center_h = str(int(root.winfo_screenwidth() / 2) - int(int(form_h) / 2))
@@ -99,7 +126,8 @@ def main():
     # configure form size
     root.geometry(form_h + 'x' + form_v + '+' + center_h + '+' + center_v)
     root.title('WGUPS')
-    root.resizable(False, False)
+    # root.resizable(False, False)
+    root.tk.call('tk', 'scaling', 1.2)
     app = MainWindow(root)
     root.mainloop()
 

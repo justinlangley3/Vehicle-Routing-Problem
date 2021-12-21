@@ -1,5 +1,6 @@
 class Node:
-    def __init__(self, data: any):
+    def __init__(self, key: int, data: any):
+        self.id = key
         self.val = data
         self.pointer = None
 
@@ -49,6 +50,18 @@ class Node:
         return self.data == other
 
     @property
+    def key(self):
+        return self.id
+
+    @key.setter
+    def key(self, k):
+        self.id = k
+
+    @key.deleter
+    def key(self):
+        self.id = None
+
+    @property
     def data(self):
         return self.val
 
@@ -89,7 +102,7 @@ class LinkedList:
             nodes.append(str(c_node.data))
             c_node = c_node.next
 
-        nodes.append("None")
+        nodes.append("None\n")
         return " -> ".join(nodes)
 
     @property
@@ -116,65 +129,15 @@ class LinkedList:
     def tail(self):
         self.end = None
 
-    def append(self, data: any):
-        """
-        Creates a new Node and appends to the end of this LinkedList\n
-        Time Complexity: Worst Case — O(1)\n
-        :param data:
-        :return: None
-        """
-        data = Node(data)
-        if self.head is None:
-            self.head = data
-            self.tail = data
-        else:
-            self.tail.next = data
-            self.tail = data
-
-    def clear(self):
-        """
-        Clears the LinkedList.\n
-        Delegates the garbage collector to cleanup unused references\n
-        :return: None
-        """
-        del self.head
-        del self.tail
-
-    def pop(self):
-        """
-        Removes and returns the last node.\n
-        Time Complexity: Worst Case — O(n)\n
-        :return: Node
-        """
-        data = self.tail
-        c_node = self.head
-        while c_node.next is not None:
-            c_node = c_node.next
-            if c_node.next.next is None:
-                c_node.next = None
-            self.tail = c_node
-        return data
-
-    def pop_front(self):
-        """
-        Removes and returns the first node\n
-        Time Complexity: Worst Case — O(1)\n
-        :return: Node
-        """
-        if self.head is None:
-            return self.head
-        data = self.head
-        self.head = data.next
-        return data
-
-    def push(self, data: any):
+    def push(self, key: int, data: any):
         """
         Creates a new Node as the head of this LinkedList\n
         Time Complexity: Worst Case — O(1)\n
+        :param key: int
         :param data: any
         :return: None
         """
-        data = Node(data)
+        data = Node(key, data)
         if self.head is None:
             self.head = data
             self.tail = data
@@ -182,40 +145,45 @@ class LinkedList:
             data.next = self.head
             self.head = data
 
-    def remove(self, data: any):
+    def remove(self, key: int):
         """
-        Searches the linked list removing the first Node with matching data\n
+        Searches the linked list removing the first Node with matching key\n
         Time Complexity: Worst Case — O(n)\n
-        :param data: any
+        :param key: int
         :return: bool
         """
         c_node = self.head
         if c_node is None:
             return False
+        if c_node.key == key:
+            self.head = c_node.next
+            c_node = None
+            return True
         while c_node.next is not None:
-            if data == c_node.next.data:
+            if key == c_node.next.key:
                 if c_node.next.next is not None:
                     c_node.next = c_node.next.next
                     return True
                 else:
-                    del c_node.next
                     c_node.next = None
                     self.tail = c_node
                     return True
             c_node = c_node.next
         return False
 
-    def search(self, data: any):
+    def search(self, key: int = None):
         """
         Searches the LinkedList and returns the Node if found\n
+        Can be searched by key or data
         Time Complexity: Worst Case — O(n)\n
+        :param key: int
         :param data: any
         :return: Node
         """
         node = self.head
         while node is not None:
-            if node.data == data:
-                return True
+            if node.key == key:
+                return node.data
             node = node.next
         return node
 
@@ -225,82 +193,12 @@ class LinkedList:
         Time Complexity: Worst Case — O(n)\n
         :return: int
         """
+        if self.head is not None and self.head.next is None:
+            return 1
+
         count = 0
         c_node = self.head
-        while c_node.next:
-            c_node = c_node.next
+        while c_node:
             count += 1
+            c_node = c_node.next
         return count
-
-    def sort(self):
-        """
-        Calls a utility to perform merge sort on the LinkedList\n
-        Time Complexity: Worst Case - O(n•log(n))\n
-        :return: None
-        """
-        _mergesort(self, self.head)
-
-
-########################################
-#  Utility Functions for Sorting       #
-########################################
-def _merge(left: Node, right: Node) -> Node:
-    """
-    Performs a merge of two LinkedLists, inserting Nodes in order and correcting pointers\n
-    Time Complexity: Worst Case — O(N+M)\n
-    :param left: Node: The head of the left-side LinkedList
-    :param right: Node: The head of the right-side LinkedList
-    :return: Node: The head of the merged LinkedList
-    """
-    merged = Node(None)
-    temp = merged
-    while left is not None and right is not None:
-        if left < right:
-            temp.next = left
-            left = left.next
-        else:
-            temp.next = right
-            right = right.next
-        temp = temp.next
-    while left is not None:
-        temp.next = left
-        left = left.next
-        temp = temp.next
-    while right is not None:
-        temp.next = right
-        right = right.next
-        temp = temp.next
-    return merged.next
-
-
-def _mergesort(linked_list: LinkedList, node: Node) -> Node:
-    """
-    Merge sort driver code\n
-    Time Complexity:    Worst Case — O(N•log(N))\n
-    Space Complexity:   Worst Case — O(N)\n
-    :param linked_list: LinkedList
-    :param node: Node
-    :return: Node: The head of the sorted LinkedList
-    """
-    if node.next is None:
-        return node
-    mid = _middle(node)
-    node2 = mid.next
-    mid.next = None
-    linked_list.head = _merge(_mergesort(linked_list, node), _mergesort(linked_list, node2))
-    return linked_list.head
-
-
-def _middle(node: Node) -> Node:
-    """
-    Finds the middle Node in a LinkedList, using a "tortoise and hare" approach\n
-    Time Complexity: Worst Case — O(N/2) = O(N)\n
-    :param node:
-    :return: Node: The middle Node of the LinkedList
-    """
-    mid_node = node
-    end_node = node.next
-    while end_node is not None and end_node.next is not None:
-        mid_node = mid_node.next
-        end_node = end_node.next.next
-    return mid_node
