@@ -96,11 +96,11 @@ class LinkedList:
 
     def __str__(self):
         nodes = []
-        c_node = self.head
+        node = self.head
 
-        while c_node:
-            nodes.append(str(c_node.data))
-            c_node = c_node.next
+        while node:
+            nodes.append(str(node.data))
+            node = node.next
 
         nodes.append("None\n")
         return " -> ".join(nodes)
@@ -152,23 +152,24 @@ class LinkedList:
         :param key: int
         :return: bool
         """
-        c_node = self.head
-        if c_node is None:
+        node = self.head
+        if node is None:
+            self.tail = None
             return False
-        if c_node.key == key:
-            self.head = c_node.next
-            c_node = None
+        if node.key == key:
+            self.head = node.next
+            node = None
             return True
-        while c_node.next is not None:
-            if key == c_node.next.key:
-                if c_node.next.next is not None:
-                    c_node.next = c_node.next.next
+        while node.next is not None:
+            if node.next.key == key:
+                if node.next.next is not None:
+                    node.next = node.next.next
                     return True
                 else:
-                    c_node.next = None
-                    self.tail = c_node
+                    node.next = None
+                    self.tail = node
                     return True
-            c_node = c_node.next
+            node = node.next
         return False
 
     def search(self, key: int = None):
@@ -176,8 +177,8 @@ class LinkedList:
         Searches the LinkedList and returns the Node if found\n
         Can be searched by key or data
         Time Complexity: Worst Case — O(n)\n
-        :param key: int
-        :param data: any
+        :param: key int
+        :param: data any
         :return: Node
         """
         node = self.head
@@ -185,7 +186,7 @@ class LinkedList:
             if node.key == key:
                 return node.data
             node = node.next
-        return node
+        return None
 
     def size(self):
         """

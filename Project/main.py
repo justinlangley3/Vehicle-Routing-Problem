@@ -2,6 +2,8 @@ import csv
 import os
 import pathlib
 import re
+import sys
+import time
 import tkinter as tk
 from structures.HashTable import HashTable
 from tkinter import filedialog
@@ -99,21 +101,36 @@ def check_for_data_sources():
 
 
 def main():
-    val = 2**22
-    print(f"{val:,}")
-    ht = HashTable(val)
-    nums = [i for i in range(val)]
-    for num in nums:
-        ht.insert(key=num, data=num)
-
-    print('Done loading HashTable: \'ht\'\nSize: %s' % str(ht.buckets))
-
-    print('Search, key=1616: %s' % ht.search(key=1616))
-    ht.remove(1616)
-    print('Search, key=1616: %s' % ht.search(key=1616))
-    print('Search, key=1044231: %s' % ht.search(1044231))
-    print('Search, key=10000000: %s' % ht.search(10000000))
-    # print(ht.table[14])
+# HashTable Tests:
+#    val = 34
+#    b = 15
+#    ht = HashTable()
+#    nums = [i for i in range(val)]
+#    print('\nHashTable: \'ht\'')
+#    print("\nAdding ~ %s items to HashTable" % f"{val:,}")
+#    start_time = time.time()
+#    for num in nums:
+#        ht.insert(key=num, value=num)
+#    print('Table Size: %s buckets' % ht.m)
+#    print('Load Factor: %s' % round(ht.n / ht.m, 3))
+#    print("--- Completed in %s seconds ---\n" % round(time.time() - start_time, 5))
+#    print("HashTable:")
+#    print(ht)
+#    print("\nRemoving ~ %s items to HashTable" % f"{val-b:,}")
+#    start_time = time.time()
+#    for x in range(val-1, b, -1):
+#        ht.remove(x)
+#    print('Table Size: %s buckets' % ht.m)
+#    print('Load Factor: %s' % round(ht.n / ht.m, 3))
+#    print("--- Completed in %s seconds ---\n" % round(time.time() - start_time, 5))
+#    print("HashTable:")
+#    print(ht)
+#
+#    print('\nTesting HashTable Operations:')
+#    print('Search, key=8: %s' % ht.search(key=8))
+#    print('Delete, key=8: %s' % ht.remove(8))
+#    print('Search, key=8: %s' % ht.search(key=8))
+#    print('Search, key=%s: %s\n' % (sys.maxsize, ht.search(sys.maxsize)))
 
     check_for_data_sources()
     root = tk.Tk()
