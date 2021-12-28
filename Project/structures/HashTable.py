@@ -20,7 +20,7 @@ class HashTable:
     def insert(self, key, value: any):
         # check if resize is needed
         if self.n >= (8 * self.m):
-            self._resize(2*2 * self.m)
+            self._resize(2 * self.m)
 
         b = self._bucket(key)
         self.table[b].push(key, value)
