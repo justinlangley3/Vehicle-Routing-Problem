@@ -1,6 +1,5 @@
 class Node:
-    def __init__(self, key: int, data: any):
-        self.id = key
+    def __init__(self, data: any):
         self.val = data
         self.pointer = None
 
@@ -50,18 +49,6 @@ class Node:
         return self.data == other
 
     @property
-    def key(self):
-        return self.id
-
-    @key.setter
-    def key(self, k):
-        self.id = k
-
-    @key.deleter
-    def key(self):
-        self.id = None
-
-    @property
     def data(self):
         return self.val
 
@@ -103,7 +90,7 @@ class LinkedList:
             node = node.next
 
         nodes.append("None\n")
-        return " -> ".join(nodes)
+        return " \u21B3 ".join(nodes)
 
     @property
     def head(self):

@@ -1,18 +1,20 @@
 import random
 import sys
 
-from . import LinkedList
+from .LinkedList import LinkedList
 
 
 class HashTable:
+    table: list[LinkedList]
 
     def __init__(self, size: int = 4):
         self.n = 0  # number of (key, val) pairs stored
         self.m = size  # number of 'buckets' i.e. the table size, default is 4
-        self.table = [LinkedList.LinkedList() for _ in range(size)]
+        self.table = [LinkedList() for _ in range(size)]
 
     def __str__(self):
-        return ''.join(str(x) for x in self.table)
+        return '\n'.join(
+            '[----------\t\tBucket ' + str(x) + '\t----------]\n' + str(self.table[x]) for x in range(len(self.table)))
 
     def _bucket(self, key):
         return key % self.m
@@ -62,7 +64,7 @@ class HashTable:
         self.m = s
 
         if s > old_s:  # Add new buckets, if needed
-            self.table.extend([LinkedList.LinkedList() for _ in range(s - old_s)])
+            self.table.extend([LinkedList() for _ in range(s - old_s)])
 
         # iterate buckets
         for i in range(old_s):
@@ -79,5 +81,13 @@ class HashTable:
                     self.table[self._bucket(k)].push(k, v)
                 node = node.next
 
-        if s < old_s:   # Remove empty buckets, if needed
+        if s < old_s:  # Remove empty buckets, if needed
             del self.table[s:]
+
+    def print_stats(self):
+        string = '[----------\tHashTable Stats\t----------]' + \
+                 '\n\tKeys:\t' + str(self.n) + \
+                 '\n\tSize:\t' + str(self.m) + \
+                 '\n\tLoad:\t%s\n' % round(self.n / self.m, 3)
+
+        print(string)

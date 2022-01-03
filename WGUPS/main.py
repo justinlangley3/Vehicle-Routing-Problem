@@ -1,14 +1,12 @@
-import csv
-import os
 import Package
+import Structures
+import csv
+import datetime
+import os
 import pathlib
 import re
-import sys
-import time
 import tkinter as tk
-from tkinter import filedialog
-from tkinter import ttk
-from structures.HashTable import HashTable
+from tkinter import filedialog, ttk
 
 
 class MainWindow:
@@ -39,7 +37,7 @@ class MainWindow:
         btn_distance.grid(column=1, row=3, padx=0, pady=5)
 
         btn_generate = ttk.Button(master, text='Generate Package Load Plan',
-                                  command=lambda: self.load_distance_data(text_package.get()))
+                                  command=lambda: self.load_package_data(text_package.get()))
         btn_generate.grid(column=0, columnspan=2, row=4, pady=10)
 
     @staticmethod
@@ -53,17 +51,21 @@ class MainWindow:
 
     @staticmethod
     def load_package_data(path):
-        out = []
+        pkg = Package.Package(1, "42 Wallaby Way", "Sydney", "AU", "2000", "EOD", 40, "Some notes")
+        pkg_table = Structures.HashTable()
         with open(path, "r") as f:
             for line in f:
                 # we don't care about lines that don't contain a package ID
                 if re.match("[0-9]+", line[0]):
                     # our file was converted from .xlsx to .csv in Excel
                     # seems to have added ",,,,,,\n" to the end of each line in the .csv
-                    data = line.strip(",,,,,,\n")
-                    data = data.split(",")
-                    out.append(data)
-            return out
+                    d = line.strip(",,,,,,\n")
+                    d = d.split(",")
+                    pkg = Package.Package(d[0], d[1], d[2], d[3], d[4], d[5], d[6], ''.join(d[7:]) or '')
+                    pkg_table.insert(pkg.id_val, pkg)
+        f.close()
+        print(pkg_table.stats())
+        return pkg_table
 
     def load_distance_data(self, path):
         self.parse_csv(path)
