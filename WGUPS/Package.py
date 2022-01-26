@@ -24,22 +24,22 @@ class Package:
     notes_val: str
 
     # magic methods
-    def __init__(self, package_id=None, street=None, city=None, state=None, postal=None, deadline=None, mass=None,
-                 notes=None):
+    def __init__(self, values: list):
+        assert len(values) == 8
         # set private vars
         self._date = datetime.date.today()
         # Set instance vars if provided
-        self.id_val = int(package_id)
-        self.street_val = street
-        self.city_val = city
-        self.state_val = state
-        self.postal_val = postal
-        if deadline == 'EOD':
+        self.id_val = int(values[0])
+        self.street_val = values[1]
+        self.city_val = values[2]
+        self.state_val = values[3]
+        self.postal_val = values[4]
+        if values[5] == 'EOD':
             self.deadline_val = datetime.datetime.strptime(f'{self._date} {__EOD__}', '%Y-%m-%d %H:%M')
         else:
-            self.deadline_val = datetime.datetime.strptime(f'{self._date} {self.convert12(deadline)}', '%Y-%m-%d %H:%M')
-        self.mass_val = float(mass)
-        self.notes_val = notes
+            self.deadline_val = datetime.datetime.strptime(f'{self._date} {self.convert12(values[5])}', '%Y-%m-%d %H:%M')
+        self.mass_val = float(values[6])
+        self.notes_val = values[7]
 
     def __repr__(self):
         return f"Package(id={repr(self.id_val)}, street={repr(self.street_val)}, city={repr(self.city_val)}, " \

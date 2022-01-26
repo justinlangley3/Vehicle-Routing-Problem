@@ -10,6 +10,12 @@ value_err = 'Msg=\'Value is out of the allowed range\''
 
 
 def debug_msg(error: Enum, frame: FrameType) -> str:
+    """
+    Provides a specified debug message from the provided stack frame
+    :param error: Enum(Error): Located in this module
+    :param frame: a stack frame object
+    :return: str
+    """
     module_name = frame.f_globals['__name__']
     class_name = frame.f_locals['self'].__class__.__name__
     function_name = frame.f_code.co_name

@@ -1,145 +1,28 @@
 from __future__ import annotations
+
+import heapq, sys
+import pprint
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from math import sqrt
+
 import Debug
 import inspect
+import multiprocessing
 from Debug import debug_msg
 from typing import TypeVar, Generic
 from functools import singledispatchmethod
+from multiprocessing import Lock, Process, Semaphore, Barrier, Array, Queue
 
 T = TypeVar('T')
 
 
+@dataclass(eq=True, order=True, unsafe_hash=True)
 class Node(Generic[T]):
-    # Class vars
-    hash: int
-    data: T
-    prev_ref: Node[T]
-    next_ref: Node[T]
-
-    #
-    # Magic Methods
-    #
-    def __init__(self, prev_node: Node[T] = None, key: int = None, data: T = None, next_node: Node[T] = None):
-        self.hash = key
-        self.data = data
-        self.prev_ref = prev_node
-        self.next_ref = next_node
-
-    def __getitem__(self, key: int | str) -> Node[T] | int | T | None:
-        """
-        Allows accessing instance variables by index or name
-        :param key: <p>int: -> node[0|1|2|3] = {self.prev, self.key, self.val, self.next}</p>
-                    <p>str: -> node['prev_ref'], node['hash'], node['data'], node['next_ref']</p>
-        :return: Node[T] | int | T | None
-        """
-        if isinstance(key, int):
-            if 0 < key <= 3:
-                if key == 0:
-                    return self.prev
-                elif key == 1:
-                    return self.key
-                elif key == 2:
-                    return self.val
-                else:
-                    return self.next
-            else:
-                raise IndexError(debug_msg(Debug.Error.INDEX, inspect.currentframe()))
-        return getattr(self, key)
-
-    # Strings
-    def __repr__(self):
-        return f'Node(key={repr(self.key)}, val={repr(self.data)})'
-
-    def __str__(self):
-        return str(self.data)
-
-    #
-    # Comparisons
-    def __eq__(self, other):
-        assert (isinstance(other, Node)), debug_msg(Debug.Error.TYPE, inspect.currentframe())
-        if isinstance(other, Node):
-            return self.data == other.data
-        return False
-
-    def __ne__(self, other):
-        assert (isinstance(other, Node)), debug_msg(Debug.Error.TYPE, inspect.currentframe())
-        if isinstance(other, Node):
-            return self.data != other.data
-        return False
-
-    def __lt__(self, other):
-        assert (isinstance(other, Node)), debug_msg(Debug.Error.TYPE, inspect.currentframe())
-        if isinstance(other, Node):
-            return self.data < other.data
-        return False
-
-    def __gt__(self, other):
-        assert (isinstance(other, Node)), debug_msg(Debug.Error.TYPE, inspect.currentframe())
-        if isinstance(other, Node):
-            return self.data > other.data
-        return False
-
-    def __le__(self, other):
-        assert (isinstance(other, Node)), debug_msg(Debug.Error.TYPE, inspect.currentframe())
-        if isinstance(other, Node):
-            return self.data <= other.data
-        return False
-
-    def __ge__(self, other):
-        assert (isinstance(other, Node)), debug_msg(Debug.Error.TYPE, inspect.currentframe())
-        if isinstance(other, Node):
-            return self.data >= other.data
-        return False
-
-    # getter properties
-    @property
-    def key(self) -> int:
-        return self.hash
-
-    @property
-    def next(self) -> Node[T]:
-        return Node[None] if self.next_ref is None else self.next_ref
-
-    @property
-    def prev(self) -> Node[T]:
-        return Node[None] if self.prev_ref is None else self.prev_ref
-
-    @property
-    def val(self) -> T:
-        return self.data
-
-    # setter properties
-    @key.setter
-    def key(self, i: int) -> None:
-        self.hash = i
-
-    @next.setter
-    def next(self, o: Node[T]) -> None:
-        self.next_ref = o
-
-    @prev.setter
-    def prev(self, o: Node[T]) -> None:
-        self.prev_ref = o
-
-    @val.setter
-    def val(self, e: T) -> None:
-        self.data = e
-
-    # deleter properties
-    @key.deleter
-    def key(self) -> None:
-        self.hash = 0
-
-    @next.deleter
-    def next(self) -> None:
-        self.next_ref = Node[None]
-
-    @prev.deleter
-    def prev(self):
-        self.prev_ref = Node[None]
-
-    @val.deleter
-    def val(self) -> None:
-        self.val = None
+    key: int = -1
+    data: T = None
+    next: Node = None
+    prev: Node = None
 
 
 class LinkedList(Generic[T]):
@@ -157,19 +40,9 @@ class LinkedList(Generic[T]):
         self.size = 0
 
     def __len__(self) -> int:
-        """
-        Returns the number of Nodes contained in the LinkedList.
-        :return: int
-        """
         return self.size
 
     def __getitem__(self, i: int) -> Node[T]:
-        """
-        Retrieves a Node using a specified index.
-        Iterates from the front or back depending on which is shorter.
-        :param: i: int
-        :return: Node[T]
-        """
         assert self._is_element_index(i)
         count = 0
         if i < (self.size >> 1):
@@ -185,31 +58,15 @@ class LinkedList(Generic[T]):
                 i += 1
 
     def __iter__(self) -> AscendingLinkedListIterator:
-        """
-        Allows the LinkedList to be iterable
-        :return: Node[T]
-        """
         return self.AscendingLinkedListIterator(self.head)
 
     def __reversed__(self) -> DescendingLinkedListIterator:
-        """
-        Allows the LinkedList to be iterable in reverse
-        :return: Node[T]
-        """
         return self.DescendingLinkedListIterator(self.tail)
 
     def __next__(self):
-        """
-        Override to allow for iterating
-        :return:
-        """
         pass
 
     def __repr__(self):
-        """
-        Generates a containerized representation of the LinkedList object
-        :return:
-        """
         r = ''
         count = 0
         for node in self:
@@ -223,10 +80,6 @@ class LinkedList(Generic[T]):
         return r
 
     def __str__(self):
-        """
-        Generates a string representation of the LinkedList object
-        :return:
-        """
         return "\n->".join(str(node) for node in self)
 
     #
@@ -236,39 +89,19 @@ class LinkedList(Generic[T]):
     #
     # Get Operations
     def get_first(self) -> Node[T]:
-        """
-        Retrieves the Node at the head of this LinkedList
-        :return: Node[T]
-        """
         assert self.head is not None
         return self.head
 
     def get_last(self) -> Node[T]:
-        """
-        Retrieves the Node at the tail of this LinkedList
-        :return: Node[T]
-        """
         assert self.tail is not None
         return self.tail
 
     #
     # Insert Operations
     def append(self, key: int, e: T) -> None:
-        """
-        Adds a Node containing element — e at the back of this LinkedList
-        :param key: int
-        :param e: an element of type T
-        :return: None
-        """
         self._link_last(key, e)
 
     def prepend(self, key: int, e: T) -> None:
-        """
-        Inserts a Node containing element — e at the front of this LinkedList
-        :param key: int
-        :param e: an element of type T
-        :return: None
-        """
         self._link_first(key, e)
 
     @singledispatchmethod
@@ -276,36 +109,32 @@ class LinkedList(Generic[T]):
         return self.add_all(self.size, c)
 
     @add_all.register
-    def _(self, i: int, c: list[list[int, T]]) -> bool:
+    def _(self, i: int, collection: list[list[int, T]]) -> bool:
         self._check_position_index(i)
-        num_elements = len(c)
+        num_elements = len(collection)
         if num_elements == 0:
             return False
-        p, s = Node[None]
+        predecessor, successor = Node[None]
 
         if i == self.size:
-            p = self.tail
+            predecessor = self.tail
         else:
-            s = self.node(i, False)
-            p = s.prev
+            successor = self.node(i, False)
+            predecessor = successor.prev
 
-        for e in c:
-            new_node = Node(p, e[0], e[1], None)
+        for container in collection:
+            new_node = Node(key=container[0], data=container[1], next=Node[None], prev=predecessor)
             # pointer adjustments
-            if p is None:
+            if predecessor is None:
                 self.head = new_node
             else:
-                p.next = s
-                s.prev = p
+                predecessor.next = successor
+                successor.prev = predecessor
         self.size += num_elements
 
     #
     # Remove Operations
     def clear(self) -> None:
-        """
-        Clears the LinkedList
-        :return:
-        """
         for node in self:
             node.val = None
             node.next = None
@@ -315,53 +144,31 @@ class LinkedList(Generic[T]):
         self.size = 0
 
     def remove_first(self) -> T:
-        """
-        Removes the Node at the head of this LinkedList and returns its data
-        :return: element of type T
-        """
         h = self.head
         assert h is not None
         return self._unlink_first(h)
 
     def remove_last(self) -> T:
-        """
-        Removes the Node at the tail of this LinkedList and returns its data
-        :return: element of type T
-        """
         t = self.tail
         assert t is not None
         return self._unlink_last(t)
 
     @singledispatchmethod
     def remove(self, e: T) -> bool:
-        """
-        Removes a node by matching against its contents
-        :param e: element of type T
-        :return: bool
-        """
         if e is None:
             for node in self:
-                if node.val is None:
+                if node.data is None:
                     self._unlink(node)
                     return True
         else:
             for node in self:
-                if node.val is e:
+                if node.data is e:
                     self._unlink(node)
                     return True
         return False
 
     @remove.register
     def _(self, i: int, is_key: bool) -> None:
-        """
-        <p>If argument: 'is_key': is True, treat 'i' as a key
-        \tThe first node containing the matching key is removed.</p>
-        <p>If argument: 'is_key': is False, then 'i' is treated as an index
-        \tThe node at the index is removed.</p>
-        :param i: int
-        :param is_key: bool
-        :return: None
-        """
         if is_key:
             for node in self:
                 if node.key == i:
@@ -372,11 +179,6 @@ class LinkedList(Generic[T]):
 
     @remove.register
     def _(self, n: Node) -> None:
-        """
-        <p>This is a singledispatchmethod that removes the first occurence of a node matching the one provided.</p>
-        :param n:
-        :return:
-        """
         for node in self:
             if n is node:
                 return self._unlink(node)
@@ -384,39 +186,20 @@ class LinkedList(Generic[T]):
     #
     # Size Operations
     def size(self) -> int:
-        """
-        Return the current size of this LinkedList
-        :return: int
-        """
         return self.size
 
     def is_empty(self) -> bool:
-        """
-        True if this LinkedList is empty, otherwise, False
-        :return: bool
-        """
         return not self.head
 
     #
     # Conversion
     def to_list(self) -> list[tuple[int, T]]:
-        """
-        Returns a list representation of this LinkedList
-        :return: list[tuple[int, T]]
-        """
-        return [(node.key, node.val) for node in self]
+        return [(node.key, node.data) for node in self]
 
     #
     # Positional Operations
     @singledispatchmethod
     def node(self, i: int) -> Node[T]:
-        """
-        <p>Returns the node at the provided index, if the index exists</p>
-        <p>Additionally, if a second argument of True is provided, i will be treated as a key.</p>
-        <p>In this case a singledispatchmethod is called to handle it</p>
-        :param i: int
-        :return: Node[T]
-        """
         assert self._is_element_index(i)
         count = 0
         if i < (self.size >> 1):
@@ -433,16 +216,6 @@ class LinkedList(Generic[T]):
 
     @node.register
     def _(self, i: int, is_key: bool) -> Node[T]:
-        """
-        <p>is_key: True - i is treated as a key.
-            The corresponding node is searched for and returned</p>
-        <p>is_key: False - i is treated as an index.
-            self.node(i) is called instead.
-            The node at the index is returned</p>
-        :param i: int
-        :param is_key: bool
-        :return: Node[T]
-        """
         if is_key:
             for n in self:
                 if n.key == i:
@@ -454,15 +227,10 @@ class LinkedList(Generic[T]):
     #
     # Search Operations
     def index_of(self, e: T) -> int:
-        """
-        Returns the index of the Node containing element — e
-        :param e: element: T
-        :return: int
-        """
         i = 0
         if e is None:
             for node in self:
-                if node.val is None:
+                if node.data is None:
                     return i
                 i += 1
         else:
@@ -472,11 +240,6 @@ class LinkedList(Generic[T]):
                 i += 1
 
     def lastIndexOf(self, e: T) -> int:
-        """
-        Iterates from back to front to determine the last occurrence of an object
-        :param e: element: T
-        :return: int
-        """
         i = self.size
         if e is None:
             for node in reversed(self):
@@ -496,49 +259,24 @@ class LinkedList(Generic[T]):
     #
     # Positional Operations
     def _is_element_index(self, i: int) -> bool:
-        """
-        Determines if the argument is an index of an existing element
-        :param i: int
-        :return: bool
-        """
         return 0 <= i <= self.size
 
     def _is_position_index(self, i: int) -> bool:
-        """
-        Determines if the argument is an indexable position for an iter or add operation
-        :param i: int
-        :return: bool
-        """
         return 0 <= i <= self.size
 
     def _check_element_index(self, i) -> None:
-        """
-        Handles raising an Error if the element is not in range
-        :param i:
-        :return:
-        """
         if not self._is_position_index(i):
             raise IndexError(debug_msg(Debug.Error.INDEX, inspect.currentframe()))
 
     def _check_position_index(self, i) -> None:
-        """
-        Handles raising an Error if a position is not in range
-        :param i:
-        :return:
-        """
         if not self._is_position_index(i):
             raise IndexError(debug_msg(Debug.Error.INDEX, inspect.currentframe()))
 
     #
     # Linking/Unlinking Operations
     def _link_first(self, key: int, e: T) -> None:
-        """
-        Inserts a new Node as the head of this LinkedList
-        :param e: element of type T
-        :return: None
-        """
         head = self.head
-        new_node = Node(Node[None], key, e, head)
+        new_node = Node(key=key, data=e, next=head, prev=Node[None])
         self.head = new_node
         # pointer adjustments on old head
         if head is None:
@@ -547,14 +285,9 @@ class LinkedList(Generic[T]):
             head.prev = new_node
         self.size += 1
 
-    def _link_last(self, key: int, e: T) -> None:
-        """
-        Add a new Node as the tail of this LinkedList
-        :param e: element of type T
-        :return: None
-        """
+    def _link_last(self, key: int, element: T) -> None:
         tail = self.tail
-        new_node = Node(tail, key, e, None)
+        new_node = Node(key=key, data=element, next=Node[None], prev=tail)
         self.tail = new_node
         # pointer adjustments on old tail
         if tail is None:
@@ -563,31 +296,20 @@ class LinkedList(Generic[T]):
             tail.next = new_node
         self.size += 1
 
-    def _link_before(self, key: int, e: T, s: Node[T]) -> None:
-        """
-        Inserts a new Node before the specified node
-        :param e: element of type T
-        :param s: the succeeding node
-        :return: None
-        """
-        p = s.prev
-        new_node = Node(p, key, e, s)
-        s.prev = new_node
-        if p is None:
+    def _link_before(self, key: int, element: T, successor: Node[T]) -> None:
+        predecessor = successor.prev
+        new_node = Node(key=key, data=element, next=successor, prev=predecessor)
+        successor.prev = new_node
+        if predecessor is None:
             self.head = new_node
         else:
-            p.next = new_node
+            predecessor.next = new_node
         self.size += 1
 
     def _unlink_first(self, head: Node[T]) -> T:
-        """
-        Unlinks the first Node and returns its data
-        :param head: Node[T]
-        :return: element of type T
-        """
-        e = head.val
+        e = head.data
         new_head = head.next
-        del head.val, head.next
+        del head.data, head.next
         self.head = new_head
         # pointer adjustments
         if new_head is None:
@@ -598,14 +320,9 @@ class LinkedList(Generic[T]):
         return e
 
     def _unlink_last(self, tail: Node[T]) -> T:
-        """
-        Unlinks the last Node and returns its data
-        :param tail: Node[T]
-        :return: element of type T
-        """
-        e = tail.val
+        e = tail.data
         new_tail = tail.prev
-        del tail.val, tail.prev
+        del tail.data, tail.prev
         self.tail = new_tail
         # pointer adjustments
         if new_tail is None:
@@ -616,11 +333,6 @@ class LinkedList(Generic[T]):
         return e
 
     def _unlink(self, n: Node[T]) -> T:
-        """
-        Unlinks the specified node x and returns its data
-        :param n: Node[T]
-        :return: element of type T
-        """
         assert n is not None
         if n is self.head:
             return self._unlink_first(n)
@@ -629,7 +341,7 @@ class LinkedList(Generic[T]):
         else:
             for node in self:
                 if node.next is n:
-                    e = node.next.val
+                    e = node.next.data
                     next_node = n.next
                     prev_node = node
                     # adjust pointers
@@ -715,21 +427,11 @@ class HashTable(Generic[T]):
     #
 
     def is_empty(self) -> bool:
-        """
-        Determines if the table is empty
-        :return: bool
-        """
         return True if self.keys <= 0 else False
 
     #
     # Insertions
-    def insert(self, k: int, v: T) -> None:
-        """
-        Inserts a new item into the HashTable
-        :param k: key: int
-        :param v: value: T
-        :return: None
-        """
+    def put(self, k: int, v: T) -> None:
         if k < 0:
             raise ValueError(debug_msg(Debug.Error.KEY_VALUE, inspect.currentframe()))
 
@@ -744,11 +446,6 @@ class HashTable(Generic[T]):
     #
     # Lookups
     def search(self, key: int) -> bool:
-        """
-        Searches the HashTable for an object containing the provided key
-        :param key: int
-        :return: bool
-        """
         # check if valid key
         if key < 0:
             raise ValueError(debug_msg(Debug.Error.VALUE, inspect.currentframe()))
@@ -761,27 +458,17 @@ class HashTable(Generic[T]):
         return False
 
     def get(self, key: int) -> T:
-        """
-        Retrieves an item holding the corresponding key
-        :param key: int
-        :return: T
-        """
         # check if valid key
         if key < 0:
             raise ValueError(debug_msg(Debug.Error.KEY_VALUE, inspect.currentframe()))
         # find bucket
         b = self._hash(key)
         # retrieve data from the LinkedList
-        return self.table[b].node(key, True).val
+        return self.table[b].node(key, True).data
 
     #
     # Removes
     def remove(self, key: int) -> bool:
-        """
-        Removes an item holding the given key
-        :param key: int
-        :return: bool
-        """
         # check if valid key
         if key < 0:
             raise ValueError(debug_msg(Debug.Error.KEY_VALUE, inspect.currentframe()))
@@ -797,10 +484,6 @@ class HashTable(Generic[T]):
         return True
 
     def clear(self) -> None:
-        """
-        Clears the HashTable of all data
-        :return:
-        """
         self.keys = 0
         for bucket in self.table:
             bucket.clear()
@@ -809,31 +492,28 @@ class HashTable(Generic[T]):
     #
     # Statistics
     def stats(self) -> str:
-        """
-        Generates statistics for the HashTable and returns them in a string
-        :return: str
-        """
         fill = '\n'
         if self.keys == 0:
-            fill += f'\tbucket=1\t{{None}}\n'
-            fill += f'\tbucket=2\t{{None}}\n'
-            fill += f'\tbucket=3\t{{None}}\n'
-            fill += f'\tbucket=4\t{{None}}\n'
+            fill += f'\t\tbucket=1\t{{None}}\n'
+            fill += f'\t\tbucket=2\t{{None}}\n'
+            fill += f'\t\tbucket=3\t{{None}}\n'
+            fill += f'\t\tbucket=4\t{{None}}\n'
         else:
             for i in range(self.size):
                 if i == self.size:
-                    fill += f'\tbucket={i}\t'
+                    fill += f'\t\tbucket={i}\t'
                     fill += '—'.join('[X]' for _ in range(len(self.table[i])))
                     fill += '\n'
                 else:
-                    fill += f'\tbucket={i}\t'
+                    fill += f'\t\tbucket={i}\t'
                     fill += '—'.join('[X]' for _ in range(len(self.table[i])))
                     fill += '\n'
-        return (f'[----------\tHashTable Stats\t----------]'
-                f'\n\tkeys={repr(self.keys)}'
-                f'\n\tsize={repr(self.size)}'
-                f'\n\tload={round(self.keys / self.size, 3)}'
-                f'\n{fill}')
+        return (f'\t[----------\tHashTable Stats\t----------]'
+                f'\n\t\tkeys={repr(self.keys)}'
+                f'\n\t\tsize={repr(self.size)}'
+                f'\n\t\tload={round(self.keys / self.size, 3)}'
+                f'\n{fill}'
+                f'\t[-------------------------------------]')
 
     #
     # Private Methods
@@ -842,21 +522,11 @@ class HashTable(Generic[T]):
     #
     # Hashing
     def _hash(self, key: int) -> int:
-        """
-        Returns an integer of the corresponding bucket a key belongs in
-        :param key: int
-        :return: int
-        """
         return key % self.size
 
     #
     # Resizing
     def _resize(self, new_table_size: int) -> None:
-        """
-        Performs resizing of the table given a new table size and rehashes in place
-        :param new_table_size: int
-        :return: None
-        """
         old_table_size = len(self.table)
         self.size = new_table_size
 
@@ -873,7 +543,7 @@ class HashTable(Generic[T]):
             # iterate LinkedList in current bucket
             for node in self.table[i]:
                 if node is not Node[None]:
-                    kv = (node.key, node.val)
+                    kv = (node.key, node.data)
                     b = self._hash(kv[0])
                     self.table[i].remove(node)
                     self.table[b].prepend(kv[0], kv[1])
@@ -881,3 +551,298 @@ class HashTable(Generic[T]):
         # remove empty buckets, if table is shrinking
         if new_table_size < old_table_size:
             del self.table[new_table_size:]
+
+
+def _vertex_list_default_factory() -> list[Graph.Vertex]:
+    return []
+
+
+class Graph:
+    class Vertex:
+        label: str
+        cost: float
+        neighbors: list[Graph.Vertex]
+
+        def __init__(self, label: str):
+            self.label = label
+            self.cost = float('inf')
+            self.neighbors = _vertex_list_default_factory()
+            self.pred = None
+            self.children = list()
+            self.degree = 0
+
+        def __repr__(self):
+            n = [n.label for n in self.neighbors]
+            return f'label={self.label}, degree={self.degree}, cost={self.cost}'
+
+        def __hash__(self):
+            return hash(self.label)
+
+        def __lt__(self, other):
+            return self.cost < other.cost
+
+    #    class Edge:
+    #        source: Graph.Vertex
+    #        destination: Graph.Vertex
+    #        weight: float
+    #
+    #        def __init__(self, id: int, source: Graph.Vertex, dest: Graph.Vertex, weight: float = 1.0):
+    #            self.id = id
+    #            self.source = source
+    #            self.destination = dest
+    #            self.weight = weight
+    #
+    #        def __hash__(self):
+    #            return hash(self.id)
+    #
+    #        def __lt__(self, other):
+    #            return self.weight < other.weight
+    #
+    #        def __gt__(self, other):
+    #            return self.weight < other.weight
+    #
+    #        def __le__(self, other):
+    #            return self.weight <= other.weight
+    #
+    #        def __ge__(self, other):
+    #            return self.weight >= other.weight
+    #
+    #        def __eq__(self, other):
+    #            return self is other.weight
+    #
+    #        def __ne__(self, other):
+    #            return self.weight is not other.weight
+
+    directed: bool
+    vertices: dict[str, Graph.Vertex]
+    edges: dict[[Graph.Vertex, Graph.Vertex], float]
+    edge_count: int
+
+    def __init__(self, directed=False):
+        self.edges = dict()
+        self.vertices = dict()
+        self.directed = directed
+        self.edge_count = 0
+
+    def add_vertex(self, label: str) -> Vertex:
+        if self.vertices.get(label):
+            return self.vertices[label]
+        else:
+            v = self.Vertex(label=label)
+            self.vertices[label] = v
+            return v
+
+    def remove_vertex(self, label: str) -> Vertex:
+        current = self.vertices[label]
+        if current:
+            for k, v in self.vertices.items():
+                # the vertex selected for removal is removed from all adjacency lists
+                v.neighbors.remove(current)
+        return self.vertices.pop(label)
+
+    def add_edge(self, source: Vertex, dest: Vertex, weight: float) -> tuple:
+        neighbors = source.neighbors
+        neighbors.append(dest)
+        self.edges[(source, dest)] = weight
+
+        if not self.directed:
+            neighbors = dest.neighbors
+            neighbors.append(source)
+            self.edges[(dest, source)] = weight
+
+        return source, dest, weight
+
+    def remove_edge(self, source: Vertex, dest: Vertex) -> tuple:
+        weight = float('inf')
+        if source and dest:
+            source.neighbors.remove(dest)
+            # if a weight other than 'inf' was assigned it will get returned
+            weight = self.edges.pop([(source, dest)])
+        if source and dest and not self.directed:
+            dest.neighbors.remove(source)
+            self.edges.pop([(dest, source)])
+        return source, dest, weight
+
+    def get_MST(self):
+        return self._prim_mst()
+
+    # TODO: Check correctness of this implementation
+    def _prim_mst(self):
+        mst = []
+        mst_cost = 0.0
+
+        seen = set()
+
+        # create a priority queue, containing all vertices, with cost initialized to 'inf'
+        queue: list[tuple[float, Graph.Vertex]] = [
+            (
+                v.cost,  # cost
+                v  # vertex
+            )
+            for k, v in self.vertices.items()
+        ]
+        # select an arbitrary index and set its weight to 0.0
+        heapq.heapreplace(queue, (0.0, queue[0][1]))
+
+        while queue:
+            cost, u = heapq.heappop(queue)
+            seen.add(u)
+
+            min_weight: float = float('inf')
+            min_vertex: Graph.Vertex
+            for n in u.neighbors:
+                if n in seen:
+                    continue
+                else:
+                    if (self.edges[(u, n)], n) > queue[0]:
+                        heapq.heapreplace(queue, (self.edges[(u, n)], n))
+                    if self.edges[(u, n)] < min_weight:
+                        min_weight = self.edges[(u, n)]
+                        min_vertex = n
+                        min_vertex.pred = u
+                        min_vertex.cost = min_weight
+                        u.cost = min_weight
+
+            mst.append((u, min_vertex))
+            mst_cost += min_vertex.cost
+            u.degree += 1
+            min_vertex.degree += 1
+        return mst, mst_cost
+
+    @staticmethod
+    def _get_odd_vertices(mst):
+        odd = list()
+        for edge in mst:
+            for vertex in edge:
+                if (vertex.degree % 2 != 0) and (vertex.degree != 0) and vertex not in odd:
+                    odd.append(vertex)
+        return odd
+
+    def _minimum_matching(self, mst, odd_vertices: list):
+        import random
+        random.shuffle(odd_vertices)
+
+        while odd_vertices:
+            v = odd_vertices.pop()
+            min_cost = float('inf')
+            min_v = None
+
+            for u in odd_vertices:
+                if v != u and self.edges[(v, u)] < min_cost:
+                    min_cost = self.edges[(v, u)]
+                    min_v = u
+            mst.append((v, min_v, min_cost))
+            odd_vertices.remove(min_v)
+
+    def _find_eulerian_tour(self, matched_mst):
+        neighbors = {}
+        for edge in matched_mst:
+            if edge[0] not in neighbors:
+                neighbors[edge[0]] = []
+
+            if edge[1] not in neighbors:
+                neighbors[edge[1]] = []
+
+            neighbors[edge[0]].append(edge[1])
+            neighbors[edge[1]].append(edge[0])
+
+        start_vertex = matched_mst[0][0]
+        eulerian_circuit = [neighbors[start_vertex][0]]
+
+        while len(matched_mst) > 0:
+            for i, v in enumerate(eulerian_circuit):
+                if len(neighbors[v]) > 0:
+                    break
+            while len(neighbors[v]) > 0:
+                w = neighbors[v][0]
+                self._remove_edge_from_matched_mst(matched_mst, v, w)
+                del neighbors[v][(neighbors[v].index(w))]
+                del neighbors[w][(neighbors[w].index(v))]
+                i += 1
+                eulerian_circuit.insert(i, w)
+                v = w
+        return eulerian_circuit
+
+    @staticmethod
+    def _remove_edge_from_matched_mst(matched_mst, u, v):
+        for i, item in enumerate(matched_mst):
+            if (item[0] == v and item[1] == u) or (item[0] == u and item[1] == v):
+                del matched_mst[i]
+        return matched_mst
+
+    def christofides(self):
+        tree = self._prim_mst()[0]
+        odd_vertices = self._get_odd_vertices(tree)
+        self._minimum_matching(tree, odd_vertices)
+        euler = self._find_eulerian_tour(tree)
+
+        current = euler[0]
+        path = [current]
+        visited = {v: False for v in euler}
+        length = 0
+
+        for v in euler[1:]:
+            if not visited[v]:
+                path.append(v)
+                visited[v] = True
+                length += self.edges[(current, v)]
+                current = v
+        path.append(path[0])
+
+        printer = pprint.PrettyPrinter(indent=4, width=120)
+        printer.pprint(path)
+
+    def a_star(self, source: Vertex, dest: Vertex):
+        def get_edge_weight(s: Graph.Vertex, d: Graph.Vertex):
+            return self.edges[(s, d)]
+
+        path = {v: None for k, v in self.vertices.items()}
+        f_cost = {v: v.cost for k, v in self.vertices.items()}
+        g_cost = {v: v.cost for k, v in self.vertices.items()}
+
+        path[source] = 0.0
+        f_cost[source] = 0.0
+        g_cost[source] = 0.0
+
+        queue = [(0.0, source)]
+
+        while queue:
+            current_f_cost, current = heapq.heappop(queue)
+            if current is dest:
+                return f_cost, path
+            for n in current.neighbors:
+                if n is dest:
+                    continue
+                else:
+                    temp_g_cost = g_cost[current] + self.edges[(current, n)]
+                    if temp_g_cost < g_cost[n]:
+                        n.pred = current
+                        g_cost[n] = temp_g_cost
+                        heuristic = get_edge_weight(n, dest)
+                        f_cost[n] = temp_g_cost + heuristic
+                        n.cost = temp_g_cost + heuristic
+                        path[n] = current
+                        heapq.heappush(queue, (f_cost[n], n))
+        return f_cost, path
+
+    def dijkstra(self, source: Vertex):
+        costs = {v: v.cost for k, v in self.vertices.items()}
+        path = {v: None for k, v in self.vertices.items()}
+
+        costs[source] = 0.0
+        queue = [(0.0, source)]
+
+        while queue:
+            current_cost, current = heapq.heappop(queue)
+
+            n: Graph.Vertex
+            for n in current.neighbors:
+                weight = current_cost + self.edges[(current, n)]
+
+                if weight < costs[n]:
+                    n.pred = current
+                    n.cost = weight
+                    costs[n] = weight
+                    path[n] = current
+                    heapq.heappush(queue, (weight, n))
+        return costs, path
