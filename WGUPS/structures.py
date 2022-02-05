@@ -6,10 +6,10 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from math import sqrt
 
-import Debug
+import debug
 import inspect
 import multiprocessing
-from Debug import debug_msg
+from debug import debug_msg
 from typing import TypeVar, Generic
 from functools import singledispatchmethod
 from multiprocessing import Lock, Process, Semaphore, Barrier, Array, Queue
@@ -846,3 +846,57 @@ class Graph:
                     path[n] = current
                     heapq.heappush(queue, (weight, n))
         return costs, path
+
+
+class DisjointSet:
+
+    def __init__(self, size):
+        self.root = [i for i in range(size)]
+        self.rank = [1] * size
+
+    def is_connected(self, x, y):
+        return self.find(x) == self.find(y)
+
+    def union(self, x, y):
+        root_x = self.find(x)
+        root_y = self.find(y)
+        # union optimized by rank
+        if root_x != root_y:
+            if self.rank[root_x] > self.rank[root_y]:
+                self.root[root_y] = root_x
+            elif self.rank[root_x] < self.rank[root_y]:
+                self.root[root_x] = root_y
+            else:
+                self.root[root_y] = root_x
+                self.rank[root_x] += 1
+
+    def find(self, x: int):
+        if x == self.root[x]:
+            return x
+        # path compression
+        self.root[x] = self.find(self.root[x])
+        return self.root[x]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

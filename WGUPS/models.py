@@ -22,6 +22,7 @@ class Package:
     deadline_val: datetime
     mass_val: float
     notes_val: str
+    load_pos: int
 
     # magic methods
     def __init__(self, values: list):
@@ -40,6 +41,7 @@ class Package:
             self.deadline_val = datetime.datetime.strptime(f'{self._date} {self.convert12(values[5])}', '%Y-%m-%d %H:%M')
         self.mass_val = float(values[6])
         self.notes_val = values[7]
+        self.load_pos = -1
 
     def __repr__(self):
         return f"Package(id={repr(self.id_val)}, street={repr(self.street_val)}, city={repr(self.city_val)}, " \
@@ -67,6 +69,10 @@ class Package:
     @property
     def notes(self) -> str:
         return self.notes_val
+
+    @property
+    def position(self) -> int:
+        return self.load_pos
 
     @property
     def postal(self) -> str:
@@ -106,6 +112,11 @@ class Package:
         assert (pkg_id >= 0)
         self.id_val = pkg_id
 
+    @position.setter
+    def position(self, pos: int) -> None:
+        assert pos > -1
+        self.load_pos = pos
+
     @postal.setter
     def postal(self, p: str) -> None:
         self.postal_val = p
@@ -125,3 +136,15 @@ class Package:
         if s[-2:] == 'PM':
             h = str(int[:2] + 12)
             return h + s[2:-3]
+
+
+class Truck:
+    def __init__(self):
+        self.packages = list[Package]
+
+    def _get_delivery_order(self):
+        # TODO: call a method in the graph data structure here
+        # this method should find an optimal delivery route, and assign a position to each package
+
+        self.packages = sorted(self.packages, key=lambda package: package.position)
+        return

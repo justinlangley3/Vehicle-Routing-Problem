@@ -1,5 +1,5 @@
 import unittest
-from WGUPS.Package import Package
+from WGUPS.models import Package
 
 
 class TestPackage(unittest.TestCase):
