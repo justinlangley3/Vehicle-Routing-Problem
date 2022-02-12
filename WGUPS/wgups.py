@@ -49,11 +49,14 @@ class MainApp(tk.Tk):
         return
 
     def pop_frame(self):
+        if self.frame_count == -1:
+            # there are no frames left to pop
+            return
+
         self.frames[self.frame_count].destroy()
         self.frame_count -= 1
         self.frames[self.frame_count].lift()
         self._resize(self.frames[self.frame_count])
-        return
 
     def _resize(self, frame):
         # screen dimensions
@@ -90,6 +93,8 @@ class LoadConfirmationView(ttk.Frame):
 class SetupView(ttk.Labelframe):
     def __init__(self, master=None):
         super().__init__(text='Data Sources')
+        self.master = master
+
         # define the frame size, so resizing can work automatically
         self.size = (300, 190)
 
@@ -155,7 +160,7 @@ class SetupView(ttk.Labelframe):
         self.button_configure = ttk.Button(
             master=self,
             text='Configure Trucks',
-            command=None  # TODO: write logic to handle changing screens and maintain state
+            command=lambda: self.on_configure_click()
         )
         self.button_distance = ttk.Button(
             master=self,
@@ -187,6 +192,11 @@ class SetupView(ttk.Labelframe):
             padx=0,
             pady=5
         )
+
+    def on_configure_click(self):
+        truck_view = TruckView(self.master)
+        truck_view.pack()
+        return
 
 
 class PackageTreeview(ttk.Treeview):
@@ -236,6 +246,7 @@ class EntryPopup(ttk.Entry):
 class TruckView(ttk.Frame):
     def __init__(self, master=None):
         super().__init__()
+        self.size = (800,600)
         self.tabs = {}
         self.num_trucks = 2
 
