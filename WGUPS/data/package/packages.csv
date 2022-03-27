@@ -1,0 +1,41 @@
+Package ID,Name,Street,City,State,Zip,Deadline,Mass (kg),Notes
+1,South Salt Lake Public Works,195 W Oakland Ave,Salt Lake City,UT,84115,10:30 AM,21,
+2,Columbus Library,2530 S 500 E,Salt Lake City,UT,84106,EOD,44,
+3,Salt Lake City Ottinger Hall,233 Canyon Rd,Salt Lake City,UT,84103,EOD,2,Can only be on truck 2
+4,Utah DMV Administrative Office,380 W 2880 S,Salt Lake City,UT,84115,EOD,4,
+5,Third District Juvenile Court,410 S State St,Salt Lake City,UT,84111,EOD,5,
+6,Redwood Park,3060 Lester St,West Valley City,UT,84119,10:30 AM,88,Delayed on flight---will not arrive to depot until 9:05 am
+7,Sugar House Park,1330 2100 S,Salt Lake City,UT,84106,EOD,8,
+8,Council Hall,300 State St,Salt Lake City,UT,84103,EOD,9,
+9,Council Hall,300 State St,Salt Lake City,UT,84103,EOD,2,Wrong address listed
+10,Rice Terrace Pavilion Park,600 E 900 South,Salt Lake City,UT,84105,EOD,1,
+11,Taylorsville City Hall,2600 Taylorsville Blvd,Salt Lake City,UT,84118,EOD,1,
+12,West Valley Prosecutor,3575 W Valley Central Station bus Loop,West Valley City,UT,84119,EOD,1,
+13,Salt Lake City Streets and Sanitation,2010 W 500 S,Salt Lake City,UT,84104,10:30 AM,2,
+14,Cottonwood Regional Softball Complex,4300 S 1300 E,Millcreek,UT,84117,10:30 AM,88,"Must be delivered with 15, 19"
+15,Holladay City Office,4580 S 2300 E,Holladay,UT,84117,9:00 AM,4,
+16,Holladay City Office,4580 S 2300 E,Holladay,UT,84117,10:30 AM,88,"Must be delivered with 13, 19"
+17,Salt Lake County Mental Health,3148 S 1100 W,Salt Lake City,UT,84119,EOD,2,
+18,Taylorsville-Bennion Heritage City Gov Off,1488 4800 S,Salt Lake City,UT,84123,EOD,6,Can only be on truck 2
+19,Salt Lake City Division of Health Services,177 W Price Ave,Salt Lake City,UT,84115,EOD,37,
+20,Housing Auth. Of Salt Lake County,3595 Main St,Salt Lake City,UT,84115,10:30 AM,37,"Must be delivered with 13, 15"
+21,Housing Auth. Of Salt Lake County,3595 Main St,Salt Lake City,UT,84115,EOD,3,
+22,Wheeler Historic Farm,6351 South 900 East,Murray,UT,84121,EOD,2,
+23,Valley Regional Softball Complex,5100 South 2700 West,Salt Lake City,UT,84118,EOD,5,
+24,Murray City Museum,5025 State St,Murray,UT,84107,EOD,7,
+25,City Center of Rock Springs,5383 South 900 East #104,Salt Lake City,UT,84117,10:30 AM,7,Delayed on flight---will not arrive to depot until 9:05 am
+26,City Center of Rock Springs,5383 South 900 East #104,Salt Lake City,UT,84117,EOD,25,
+27,International Peace Gardens,1060 Dalton Ave S,Salt Lake City,UT,84104,EOD,5,
+28,South Salt Lake Police,2835 Main St,Salt Lake City,UT,84115,EOD,7,Delayed on flight---will not arrive to depot until 9:05 am
+29,Sugar House Park,1330 2100 S,Salt Lake City,UT,84106,10:30 AM,2,
+30,Council Hall,300 State St,Salt Lake City,UT,84103,10:30 AM,1,
+31,Salt Lake County/United Police Dept,3365 S 900 W,Salt Lake City,UT,84119,10:30 AM,1,
+32,Salt Lake County/United Police Dept,3365 S 900 W,Salt Lake City,UT,84119,EOD,1,Delayed on flight---will not arrive to depot until 9:05 am
+33,Columbus Library,2530 S 500 E,Salt Lake City,UT,84106,EOD,1,
+34,Holladay City Office,4580 S 2300 E,Holladay,UT,84117,10:30 AM,2,
+35,International Peace Gardens,1060 Dalton Ave S,Salt Lake City,UT,84104,EOD,88,
+36,Deker Lake,2300 Parkway Blvd,West Valley City,UT,84119,EOD,88,Can only be on truck 2
+37,Third District Juvenile Court,410 S State St,Salt Lake City,UT,84111,10:30 AM,2,
+38,Third District Juvenile Court,410 S State St,Salt Lake City,UT,84111,EOD,9,Can only be on truck 2
+39,Salt Lake City Streets and Sanitation,2010 W 500 S,Salt Lake City,UT,84104,EOD,9,
+40,Utah DMV Administrative Office,380 W 2880 S,Salt Lake City,UT,84115,10:30 AM,45,
