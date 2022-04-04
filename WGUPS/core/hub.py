@@ -16,6 +16,7 @@ from WGUPS.models.truck import Truck
 
 
 class Hub:
+    # primary data structures
     _addresses: list[Address]
     _graph: Graph[Address]
     _packages: HashTable[int, Package]
@@ -32,66 +33,93 @@ class Hub:
     # package 'views' by state
     _delivered: list[Package]
 
-    # for separating packages with dependencies into resolved groups
+    # for separating packages with dependencies into their resolved groupings
     _dependency_chains: list[list[Package]]
 
-    # containers for data related to delivery trips
+    # additional data structures for data related to delivery trips
     _trips: dict[datetime, list[int]]
     _trip_distances: list[list[float]]
     _departure_times: list[datetime]
 
     def __init__(self, addresses: list[Address], graph: Graph, packages: HashTable[int, Package], num_trucks: int = 2):
-
+        # BEGIN Initialize primary data structures
+        # store passed in data
         self._addresses = addresses
         self._graph = graph
         self._packages = packages
-        self.HUB = self._addresses[0]
+        self._trucks = [Truck() for _ in range(num_trucks)]
+        # END Initialize primary data structures
 
-        # 'views'
+        # BEGIN Initialization of Package Categories
+        # initialize 'views' as empty sets
         self._delayed = set()
         self._dependencies = set()
         self._having_dependency = set()
         self._invalid = set()
         self._priority = set()
         self._standard = set()
+        # END Initialization of Package Categories
 
-        self._dependency_chains = list()
+        # Set a variable containing the hub address, so it can be retrieved easily
+        self.HUB = self._addresses[0]
+
+        # BEGIN Initialization of Remaining Packages
         self._remaining = [package for package in self._packages]
+        # END Initialization of Remaining Packages
 
-        # generate data for package 'views'
-        # places packages into different categories
+        # generate the category data, store in set objects
         self._generate_views()
+
+        # BEGIN Dependency Computations
+        # create an empty list
+        self._dependency_chains = list()
+        # Compute Dependency Chains,
+        # this is mostly some discrete math on sets occurring here.
         self._compute_dependency_chains()
+        # The method first pulls IDs of all packages with dependencies, as well as dependents,
+        # then, isolates them into groups by how much 'crossover' they have.
+        # (packages with similar dependencies go in same group)
+        # At that point they are assembled into lists of package objects and stored
+        # END Dependency Computations
 
-        # initialize with empty trucks
-        self._trucks = [Truck() for _ in range(num_trucks)]
-
+        # BEGIN Initialization of Truck Related Data Structures
         # setup containers for trip data
         self._trips = {}
+        # initialize an empty list for containing last departure time by truck
         self._trip_distances = [list() for _ in range(len(self._trucks))]
 
-        # initialize a list containing the last departure time for each truck initialized to 08:00 am
         today = datetime.today()
-
         # initialize all departure time 1 microsecond apart to keep keys unique
+        # this is required for all trucks to appear at the beginning of the day, so the trips dictionary
+        # otherwise, the trips dict will overwrite one trip with another truck's trip data
+        # a better solution should be implemented, but it works for the purposes of the task
         self._departure_times = [datetime(today.year,
                                           today.month,
                                           today.day,
                                           8, 0, 0, x) for x in range(len(self._trucks))]
+        # END Initialization of Truck Related Data Structures
 
+        # Begin Load/Delivery Optimization (Core Algorithm)
         self._dispatch_trucks()
+        # End Load/Delivery Optimization
+
+        # The class object is now ready for user interaction.
 
     @property
-    def trucks(self) -> int:
+    def trucks(self) -> int:    # make it easy, externally, to get the truck count
         """The number of trucks in the hub"""
         return len(self._trucks)
 
-    def _prepare_shipments(self) -> None:
+    #
+    # BEGIN Helper Methods
+    #
+    def _prepare_shipments(self) -> None:   # Unused, marked for delete
         """Mark all packages as ready for delivery"""
         for package in self._packages:
             package.set_status(PackageStatus.Hub)
 
-    def reset_views(self) -> None:
+    def reset_views(self) -> None:  # Unused, marked for delete
+        """Clear all category 'views' """
         self._delayed.clear()
         self._dependencies.clear()
         self._having_dependency.clear()
@@ -99,6 +127,14 @@ class Hub:
         self._priority.clear()
         self._standard.clear()
 
+    def _update_master(self, package: Package) -> None:
+        """Update a package in the master HashTable"""
+        self._packages[int(package.id)] = package
+    #
+    # End Helper Methods
+    #
+
+    # BEGIN Dependency Chain Methods
     def _compute_dependency_chains(self) -> None:
         """
         Builds package dependency chains i.e. groups of packages that must be delivered together.
@@ -218,9 +254,12 @@ class Hub:
         for chain in self._dependency_chains:
             if p in chain:
                 return chain
+    #
+    # END Dependency Chain Methods
+    #
 
     #
-    # Package counts grouped by category
+    # BEGIN Package Categorization Methods
     #
     def _generate_views(self) -> None:
         """Counts packages by category and displays to the user"""
@@ -264,13 +303,12 @@ class Hub:
         _print_stats()
         input(f'Press <{Style.RED1}Enter{Style.END}> to continue ...\n{Style.GREEN2}> {Style.END}')
         cls()
-
-    def _update_master(self, package: Package) -> None:
-        """Update a package in the master HashTable"""
-        self._packages[int(package.id)] = package
+    #
+    # END Package Categorization Methods
+    #
 
     #
-    # Truck Loading and Delivery Operations
+    # Begin Truck Loading and Delivery Methods
     #
     def _load_remaining(self) -> None:
         """
@@ -510,12 +548,13 @@ class Hub:
 
             self._departure_times[truck_id] = clock
             self._trip_distances[truck_id].append(total_distance)
+
     #
-    # End Truck Loading and Delivery Operations
+    # END Truck Loading and Delivery Methods
     #
 
     #
-    #   Functions for computing statistics
+    # BEGIN Statistics Methods
     #
     def mileage_total(self) -> float:
         """Total mileage of all trips for all trucks"""
@@ -566,9 +605,12 @@ class Hub:
                 package.set_status(PackageStatus.Hub)
                 stats += package.printable() + '\n'
         return stats
+    #
+    # END Statistics Methods
+    #
 
     #
-    #   Search/Lookup operations
+    # BEGIN Search/Lookup Methods
     #
     def find_delivered_at_time(self, _time) -> list[Package]:
         """Finds all delivered packages at the provided time"""
@@ -582,7 +624,7 @@ class Hub:
         """Finds all enroute packages loaded on a truck at the provided time, separated by truck"""
         # microseconds are used to differentiate 'unique' initial departure times
         _all_enroute = [list() for _ in range(len(self._trucks))]
-        _trucks = self._retrieve_time_window(_time)
+        _trucks = self._retrieve_trip_window(_time)
         for _i, _truck in enumerate(_trucks):
             for _id in _truck:
                 if self._packages[int(_id)].delivered > _time:
@@ -597,7 +639,7 @@ class Hub:
         """Finds all undelivered packages at the provided time"""
         all_delivered = []
         enroute_ids = []
-        _trucks = self._retrieve_time_window(_time)
+        _trucks = self._retrieve_trip_window(_time)
         for _truck in _trucks:
             for _id in _truck:
                 if self._packages[_id].delivered > _time:
@@ -610,8 +652,8 @@ class Hub:
                     all_delivered.append(copy_of)
         return sorted(all_delivered, key=operator.attrgetter('delivered'), reverse=True)
 
-    def _retrieve_time_window(self, _time: datetime) -> list[list[int]]:
-        """Finds the time window containing a searched time and returns truck trips occurring at that time"""
+    def _retrieve_trip_window(self, _time: datetime) -> list[list[int]]:
+        """Finds the trip data in the time window of a searched time and returns truck trips occurring at that time"""
         _time += timedelta(microseconds=len(self._trucks))
         _time_windows: list[list[int]] = [list() for _ in range(len(self._trucks))]
         _i = 0
@@ -666,9 +708,12 @@ class Hub:
             if package.mass == int(mass):
                 found.append(copy(package))
         return sorted(found, key=operator.attrgetter('id'))
+    #
+    # END Search/Lookup Methods
+    #
 
     #
-    # Views of all package statuses at a given time key
+    # BEGIN Special Print Methods
     #
     def snapshot(self, at_time: str) -> str:
         """
@@ -771,4 +816,6 @@ class Hub:
         at_hub = self.find_undelivered_at_time(_time=search_key)
         snapshot = _make_snapshot_printable(_time=at_time, _at_hub=at_hub, _delivered=delivered, _enroute=enroute)
         return snapshot
-
+    #
+    # END Special Print Methods
+    #
