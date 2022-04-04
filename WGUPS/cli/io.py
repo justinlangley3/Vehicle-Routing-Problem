@@ -29,7 +29,7 @@ def get_last_folder_in_path(path: str) -> str:
     platform = get_platform().lower()
     folders = list()
     # handle platform specifics
-    if 'lin' in platform or 'os x' in platform:
+    if 'lin' in platform.lower() or 'os x' in platform.lower():
         folders = path.split(sep='/')
     if 'win' in get_platform().lower():
         folders = path.split('\\\\')
@@ -103,9 +103,9 @@ def request_data_files(relative_paths: list[str], ext: str) -> tuple[Path, ...]:
         _rows: list[str] = list()
 
         # Specify columns, column widths, and styling
-        _cols = ('#:', 'Name:', 'Ext.', 'Last Modified')
+        _cols = ('#:', 'File', ' Ext', 'Last Modified')
         _widths = (2, 36, 4, 19)
-        _styles = (Style.BOLD, Style.BLUE1, Style.VIOLET1, Style.YELLOW2)
+        _styles = (Style.BOLD, Style.BLUE1, Style.BLUE1, Style.YELLOW2)
 
         # create table header
         _fill = '-' * 68

@@ -83,14 +83,11 @@ class Hub:
 
     @property
     def trucks(self) -> int:
+        """The number of trucks in the hub"""
         return len(self._trucks)
 
     def _prepare_shipments(self) -> None:
-        """
-        Update package statuses, so they appear at the hub location
-        Returns: None
-
-        """
+        """Mark all packages as ready for delivery"""
         for package in self._packages:
             package.set_status(PackageStatus.Hub)
 
@@ -217,12 +214,19 @@ class Hub:
             return [copy(self._packages[pid]) for pid in deps]
 
     def _get_dependency_chain(self, p: Package) -> list[Package] | None:
+        """Get the dependency chain provided a package"""
         for chain in self._dependency_chains:
             if p in chain:
                 return chain
 
+    #
+    # Package counts grouped by category
+    #
     def _generate_views(self) -> None:
+        """Counts packages by category and displays to the user"""
+
         def _add_special_handling(p: Package) -> None:
+            """Add package to each category it was found in"""
             if p.has_delay():
                 self._delayed.add(copy(p))
             if p.has_dependency() is not None:
@@ -243,6 +247,7 @@ class Hub:
                 self._standard.add(copy(p))
 
         def _print_stats():
+            """Print package category statistics to screen"""
             print(f'\n{Style.END}{Style.RED1}{len(self._invalid)}{Style.END} packages with an invalid address.')
             print(f'{Style.END}{Style.RED1}{len(self._having_dependency)}{Style.END} having dependencies.')
             print(f'{Style.END}{Style.YELLOW2}{len(self._dependencies)}{Style.END} which are dependencies.')
@@ -261,9 +266,37 @@ class Hub:
         cls()
 
     def _update_master(self, package: Package) -> None:
+        """Update a package in the master HashTable"""
         self._packages[int(package.id)] = package
 
-    def _load_remaining(self):
+    #
+    # Truck Loading and Delivery Operations
+    #
+    def _load_remaining(self) -> None:
+        """
+        Performs sorting packages onto trucks for the given trip.
+        A priority queue is used to load packages with the earliest deadline first.
+
+        ~ O(N * M), Influenced by: ( total packages * number of trucks )
+                    each truck is looped, but the while loop in each truck terminates when:
+                    - The truck is full.
+                    - No packages remain.
+
+        Remaining checks when a package is pulled off the queue:
+            - Has a truck requirement.
+            - Was delayed, but it's arrival time has elapsed.
+            - In a dependency chain. (If there is room on the truck, the package + all others in chain are loaded)
+            - Address is invalid, but its update time has elapsed.
+
+        On function call, if no packages remain, terminates immediately
+
+        Load order:
+            Priority packages
+
+        Returns:
+
+        """
+
         def receive_update(_to_update: Package):
             """Send an update to a package"""
             # The task requirements state that WGU doesn't know what the updates are until 10:30 am.
@@ -404,7 +437,23 @@ class Hub:
             print()
             count += 1
 
-    def _deliver_packages_in_truck(self, truck_id: int, truck: Truck, path: list[Address]):
+    def _deliver_packages_in_truck(self, truck_id: int, truck: Truck, path: list[Address]) -> None:
+        """
+        Handles computing route distance and delivery time computations.
+        Additionally, updates departure times, stores trips, and trip distances in their data structures.
+
+        Complexity:
+        O(n + m) - number of packages in the truck by number of edges in the path,
+                   since this number is the same, runtime is on average O(n)
+
+        Args:
+            truck_id: int
+            truck:  Truck
+            path: list[Address]
+
+        Returns: None
+
+        """
         from WGUPS.util.time import calc_travel_time
 
         def _calc_distances(_path: list[Address]) -> tuple[float, list[tuple[Address, Address, float]]]:
@@ -461,8 +510,15 @@ class Hub:
 
             self._departure_times[truck_id] = clock
             self._trip_distances[truck_id].append(total_distance)
+    #
+    # End Truck Loading and Delivery Operations
+    #
 
+    #
+    #   Functions for computing statistics
+    #
     def mileage_total(self) -> float:
+        """Total mileage of all trips for all trucks"""
         total = 0.0
         for trips in self._trip_distances:
             for trip in trips:
@@ -470,6 +526,7 @@ class Hub:
         return round(total, 1)
 
     def all_trip_distances(self) -> str:
+        """Combined view of trip distances for each truck, and a combined total"""
         stats = f'{Style.YELLOW2}Distance Statistics:{Style.END}\n'
         for i in range(len(self._trucks)):
             stats += self.trip_distance_by_truck(i)
@@ -477,29 +534,31 @@ class Hub:
         return stats
 
     def trip_distance_by_truck(self, truck_id: int) -> str:
-        stats = f'\n{Style.YELLOW2}Truck {Style.UNDERLINE}#00{truck_id+1}:{Style.END}\n\n'
+        """Compute distance of all trips for a given truck."""
+        stats = f'\n{Style.YELLOW2}Truck {Style.UNDERLINE}#00{truck_id + 1}:{Style.END}\n\n'
         trips = self._trip_distances[truck_id::len(self._trucks)]
         total = 0.0
         for i, trip in enumerate(trips):
-            stats += f'Trip {i+1} Distance: {round(sum(trip), 1)} mi\n'
             total += sum(trip)
         stats += f'Total Distance: {round(total, 1)} mi\n\n'
         return stats
 
     def trip_distance(self, truck_id: int, trip_id: int) -> float:
+        """Compute the distance of a single trip by a given truck."""
         truck = self._trip_distances[truck_id::len(self._trucks)]
         for i, trip in enumerate(truck):
             return round(trip[trip_id], 1)
 
     def route_plan_by_truck_id(self, key: int):
-        stats = f'Route plans for {Style.YELLOW2}Truck {Style.UNDERLINE}#00{key+1}:{Style.END}\n' \
+        """Retrieve the route plans for a given truck"""
+        stats = f'Route plans for {Style.YELLOW2}Truck {Style.UNDERLINE}#00{key + 1}:{Style.END}\n' \
                 f'{Style.YELLOW2}(Note: Packages are in sorted delivery order.){Style.END}\n\n'
         trips = []
         for trip in self._trips.values():
             trips.append(trip)
         searched = trips[key::len(self._trucks)]
         for i, trip in enumerate(searched):
-            stats += f'Trip {i+1}:\n'
+            stats += f'Trip {i + 1}:\n'
             stats += f'Planned Mileage: {self.trip_distance(truck_id=key, trip_id=i)} mi\n'
             packages = [copy(self._packages[int(pid)]) for pid in trip]
             packages = sorted(packages, key=operator.attrgetter('delivered'))
@@ -508,6 +567,9 @@ class Hub:
                 stats += package.printable() + '\n'
         return stats
 
+    #
+    #   Search/Lookup operations
+    #
     def find_delivered_at_time(self, _time) -> list[Package]:
         """Finds all delivered packages at the provided time"""
         _all_delivered = []
@@ -561,6 +623,53 @@ class Hub:
             _i += 1
         return _time_windows
 
+    def lookup_by_id(self, key: int) -> Package:
+        """Search for a package by its ID"""
+        return copy(self._packages[int(key)])
+
+    def lookup_by_address(self, street: str) -> list[Package]:
+        """Search package(s) by address"""
+        found = []
+        for package in self._packages:
+            if street in package.address.street:
+                found.append(copy(package))
+        return sorted(found, key=operator.attrgetter('id'))
+
+    def lookup_by_deadline(self, search: datetime) -> list[Package]:
+        """Search for package(s) by deadline"""
+        found = []
+        for package in self._packages:
+            if package.deadline == search:
+                found.append(copy(package))
+        return sorted(found, key=operator.attrgetter('deadline'))
+
+    def lookup_by_city(self, city: str) -> list[Package]:
+        """Search for package(s) by city"""
+        found = []
+        for package in self._packages:
+            if package.address.city == city:
+                found.append(copy(package))
+        return sorted(found, key=operator.attrgetter('id'))
+
+    def lookup_by_zip(self, postal: str) -> list[Package]:
+        """Search for package(s) by zip"""
+        found = []
+        for package in self._packages:
+            if package.address.postal == postal:
+                found.append(copy(package))
+        return sorted(found, key=operator.attrgetter('id'))
+
+    def lookup_by_weight(self, mass: str) -> list[Package]:
+        """Search for package(s) by weight"""
+        found = []
+        for package in self._packages:
+            if package.mass == int(mass):
+                found.append(copy(package))
+        return sorted(found, key=operator.attrgetter('id'))
+
+    #
+    # Views of all package statuses at a given time key
+    #
     def snapshot(self, at_time: str) -> str:
         """
         Creates a 'snapshot' for packages at the requested time.
@@ -663,40 +772,3 @@ class Hub:
         snapshot = _make_snapshot_printable(_time=at_time, _at_hub=at_hub, _delivered=delivered, _enroute=enroute)
         return snapshot
 
-    def lookup_by_id(self, key: int) -> Package:
-        return copy(self._packages[int(key)])
-
-    def lookup_by_address(self, street: str) -> list[Package]:
-        found = []
-        for package in self._packages:
-            if street in package.address.street:
-                found.append(copy(package))
-        return sorted(found, key=operator.attrgetter('id'))
-
-    def lookup_by_deadline(self, search: datetime) -> list[Package]:
-        found = []
-        for package in self._packages:
-            if package.deadline == search:
-                found.append(copy(package))
-        return sorted(found, key=operator.attrgetter('deadline'))
-
-    def lookup_by_city(self, city: str) -> list[Package]:
-        found = []
-        for package in self._packages:
-            if package.address.city == city:
-                found.append(copy(package))
-        return sorted(found, key=operator.attrgetter('id'))
-
-    def lookup_by_zip(self, postal: str) -> list[Package]:
-        found = []
-        for package in self._packages:
-            if package.address.postal == postal:
-                found.append(copy(package))
-        return sorted(found, key=operator.attrgetter('id'))
-
-    def lookup_by_weight(self, mass: str) -> list[Package]:
-        found = []
-        for package in self._packages:
-            if package.mass == int(mass):
-                found.append(copy(package))
-        return sorted(found, key=operator.attrgetter('id'))

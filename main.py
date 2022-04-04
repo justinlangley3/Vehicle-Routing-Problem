@@ -4,11 +4,21 @@
 # 2022-03-22
 #
 # noinspection PyUnusedLocal
-def _signal_handler(sig, frame):
-    """Interrupt signal handler"""
-    import sys
-    print("\nCtrl-C was pressed. Exiting ...")
-    sys.exit(0)
+def _exit_sig_handler(sig, frame):
+    """Signal handler to exit gracefully on interrupt"""
+    from sys import exit
+    print("\nExiting ...")
+    exit(0)
+
+
+def clear() -> None:
+    from os import system
+    from WGUPS.cli.environment import get_platform
+    print('\n' * 100)
+    if 'win' in get_platform().lower():
+        system('cls')
+    else:
+        system('clear')
 
 
 def main():
@@ -20,8 +30,17 @@ def main():
     import WGUPS.cli.prompts as prompts
     from WGUPS.app import App
     from WGUPS.core.hub import Hub
-    from WGUPS.cli.environment import cls
-    signal.signal(signal.SIGINT, _signal_handler)
+    from WGUPS.cli.environment import get_platform
+
+    # Set the interrupt that signals execution halt, depending on platform
+    if 'win' in get_platform().lower():
+        signal.signal(signal.CTRL_C_EVENT, _exit_sig_handler)
+    else:
+        signal.signal(signal.SIGINT, _exit_sig_handler)
+
+    # function to clear the screen
+    # it will often be used where data is presented to mitigate the user from having to scroll
+    clear()
 
     # Greet the user, with a prompt to inform that data needs to be loaded in
     prompts.display_welcome()
@@ -49,9 +68,7 @@ def main():
     # This method requires a list of addresses to match a package to its corresponding Address object
     packages = io.build_packages(path=package_data_path, addresses=addresses)
 
-    # function to clear the screen
-    # it will often be used where data is presented to mitigate the user from having to scroll
-    cls()
+    clear()
 
     # Create a hub object from data we retrieved via user input
     # Creating this object precomputes the following:
