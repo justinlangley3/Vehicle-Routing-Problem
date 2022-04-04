@@ -13,7 +13,9 @@ def display_welcome():
     exit_margin = pad * ((85 - len(exit_help)) // 2)
 
     welcome_text = f'{Style.GREY}{line_fill}{Style.END}\n' \
-                   f'{Style.GREY}|{Style.END}{title_margin}{Style.BLUE1}{title}{Style.END}{Style.GREY}{title_margin}|{Style.END}\n' \
+                   f'{Style.GREY}|{Style.END}{title_margin}' \
+                   f'{Style.BLUE1}{title}{Style.END}' \
+                   f'{Style.GREY}{title_margin}|{Style.END}\n' \
                    f'{Style.GREY}{line_fill}{Style.END}\n' \
                    f'{exit_margin}{exit_help}{exit_margin}\n' \
                    f'\n{Style.GREY}{line_fill}{Style.END}\n'
@@ -24,89 +26,6 @@ def display_welcome():
 
     welcome_text += info
     input(welcome_text)
-
-
-def cmd_help(arg: str):
-    text = ''
-    match arg:
-        case 'l':
-            text = f'Usage:\n' \
-                   f'-l [option] [value]\n' \
-                   f'-------------------' \
-                   f'Option\t|\tValue\n' \
-                   f'--------------------\n' \
-                   f'a, lookup package by ADDRESS\n' \
-                   f'd, lookup package by DEADLINE\n' \
-                   f'c, lookup package by CITY\n' \
-                   f'i, lookup package by ID\n' \
-                   f's, lookup package by STATUS\n' \
-                   f'w, lookup package by WEIGHT\n' \
-                   f'z, lookup package by ZIP'
-        case 'la':
-            text = f'Usage:\n' \
-                   f'-la [value], lookup package by ADDRESS\n' \
-                   f'Description:\n' \
-                   f'The value parameter must exactly match the street address of the package.'
-        case 'ld':
-            text = f'Usage:\n' \
-                   f'-ld [value], lookup package by DEADLINE\n' \
-                   f'Description:\n' \
-                   f'The value must be a valid time in 24hr format [HH:MM] e.g. 09:59 or 21:59.'
-        case 'lc':
-            text = f'Usage:\n' \
-                   f'-lc [value], lookup package by CITY\n' \
-                   f'Description:\n' \
-                   f'The value must exactly match the city of the package.'
-        case 'li':
-            text = f'Usage:\n' \
-                   f'-li [value], lookup package by ID\n' \
-                   f'Description:\n' \
-                   f'The value must be a valid integer ID of the package.'
-        case 'ls':
-            text = f'Usage:\n' \
-                   f'-ls [value], lookup package by STATUS\n' \
-                   f'Description:\n' \
-                   f'The value must match a valid status: \'hub\', \'enroute\', \'delivered\'.'
-        case 'lw':
-            text = f'Usage:\n' \
-                   f'-lw [value], lookup package by WEIGHT\n' \
-                   f'Description:\n' \
-                   f'The value must be a valid integer value.'
-        case 'lz':
-            text = f'Usage:\n' \
-                   f'-lz [value], lookup package by ZIP\n' \
-                   f'Description:\n' \
-                   f'The value must be a valid 5-digit zipcode.'
-        case 's':
-            text = f'Usage:\n' \
-                   f'-s[option], simulate delivery of currently loaded trucks' \
-                   f'Description:\n' \
-                   f'Simulates delivery using the specified algorithm option.\n' \
-                   f'If no option is chosen, convex hull is used by default.' \
-                   f'Options:\n' \
-                   f'a - ant colony optimization (metaheuristic)\n' \
-                   f'c - convex hull\n' \
-                   f'g - genetic algorithm (metaheuristic)\n' \
-                   f'n - nearest neighbor'
-        case 'm':
-            text = f'Usage:\n' \
-                   f'-m' \
-                   f'Description:' \
-                   f'Displays metrics of any present trucks if delivery has been simulated.'
-        case 'u':
-            text = f'Usage:\n' \
-                   f'-u[option] [value]\n' \
-                   f'Description:\n' \
-                   f'Update a package parameter to the specified value.\n' \
-                   f'Options:\n' \
-                   f'a, address\n' \
-                   f'd, deadline\n' \
-                   f'c, city\n' \
-                   f'w, weight\n' \
-                   f'z, zip'
-        case '_':
-            text = 'Invalid argument provided'
-    print(text)
 
 
 def choose_int(prompt: str, count: int) -> int:
@@ -131,5 +50,5 @@ def choose_int(prompt: str, count: int) -> int:
             return int(choice)
         except AssertionError:
             print(f'{Style.RED1}Input must be a value shown{Style.END}', flush=True)
-            input(f'Press {Style.YELLOW2}ENTER{Style.END} to retry ...')
+            input(f'Press <{Style.YELLOW2}ENTER{Style.END}> to retry ...')
             pass

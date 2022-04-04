@@ -35,6 +35,7 @@ class HashTable(Generic[Key, Value]):
     def __setitem__(self, key: Key, value: Value):
         """
         Implements setting/adding an item as a key, value pair
+        Or updates the underlying item if key is found
         ex: hashtable[key] = value
         """
         # a key shouldn't be a null value, even though Python can hash null values
@@ -48,6 +49,17 @@ class HashTable(Generic[Key, Value]):
 
         # locate appropriate bucket
         b = self._hash(key)
+
+        # walk the chain in the table to see if an item containing the key exists
+        chain = self._storage[b].head
+        while chain.next:
+            if chain.data[0] == key:
+                # item was found to exist, update it and return
+                chain.data = (key, value)
+                return
+            chain = chain.next
+
+        # this is a new item, add and increment # of keys
         self._storage[b].prepend((key, value))
         self._keys += 1
 
@@ -69,7 +81,7 @@ class HashTable(Generic[Key, Value]):
             if self._buckets > 4 and self._keys <= (2 * self._buckets):
                 self._resize(int(0.5 * self._buckets))
         except AssertionError:
-            # TODO: Implement error logging
+            # TODO: Implement error logging properly with logger
             debug.debug_msg(debug.Error.INDEX, inspect.currentframe())
             return
 

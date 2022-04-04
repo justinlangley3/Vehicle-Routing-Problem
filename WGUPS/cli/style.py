@@ -20,10 +20,10 @@ class Style:
       - f'{TColor.STYLE}Text to format{TColor.END}'
 
       Color:
-      - f'{TColor.COLORVALUE}Text to format{TColor.END}'
+      - f'{TColor.VALUE}Text to format{TColor.END}'
 
       Color + Style
-      - f'{TColor.COLORVALUE}{TColor.STYLE}Text to format{TColor.END}'
+      - f'{TColor.VALUE}{TColor.STYLE}Text to format{TColor.END}'
     """
     # Font Colors
     BLACK = '\33[30m'

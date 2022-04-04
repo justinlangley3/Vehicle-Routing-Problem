@@ -1,6 +1,4 @@
 # STL Imports
-import datetime
-import pprint
 from dataclasses import dataclass, field
 
 # Project Imports
@@ -24,70 +22,52 @@ class Truck:
     def __next__(self):
         pass
 
-    def load_package(self, package):
-        if self.is_full():
-            raise TruckCapacityError
-        package.set_status(PackageStatus.Enroute)
-        self._pids.append(package.id)
-        self._packages.append(package)
-
-    def is_full(self) -> bool:
-        return len(self._packages) == self._capacity
-
-    def has_capacity(self) -> int | None:
-        if len(self._packages) < self._capacity:
-            return self._capacity - len(self._packages)
-        return None
-
-    def optimize_delivery(self, _graph: Graph, _hub: Address) -> list[Package]:
-        from WGUPS.core import tsp
-        solver = tsp.Solver(use=tsp.Method.ConvexHull, graph=_graph, packages=self.packages, hub=_hub)
-        optimized = solver.solve()
-        return optimized
-
-    def perform_delivery(self, _path: list[Address], _graph: Graph, departure: datetime.time):
-        def _calc_distances(_path: list[Address]) -> tuple[int, list[tuple[Address, Address, float]]]:
-            """
-            Accepts a list of addresses, the 'path', that was optimized via the TSP module.
-            Each 'leg' of the trip is calculated and stored as a list of tuples.
-            The total distance is then calculated to be the distance sum of all the legs.
-            Returns both total distance, and the list of legs as a tuple
-
-            Args:
-                _path: list[Address]
-
-            Returns: tuple[int, list[tuple[Address, Address, float]]]
-
-        """
-            _seen = []
-            _total = 0
-            _prev_point = _path[0]
-            _path.remove(_prev_point)
-            while _path:
-                _current = _path[0]
-                _edge = (_prev_point, _current, _graph[_prev_point][_current])
-                _seen.append(_edge)
-                _prev_point = _current
-                _path.remove(_current)
-            for _distance in _seen:
-                _total += _distance[2]
-            return _total, _seen
-
-        # call subroutine to calculate distances
-        total_distance, edges = _calc_distances(_path=_path)
-
-        # update package statuses
-        for edge in edges:
-            from WGUPS.util.time import calc_travel_time
-            h, m, s = calc_travel_time(edge[2], self._speed)
-
-        pass
+    @property
+    def speed(self) -> int:
+        return self._speed
 
     @property
     def packages(self) -> list[Package]:
         return self._packages
 
+    @property
+    def pids(self) -> list[int]:
+        return self._pids
+
+    def load_package(self, package):
+        if self.is_full():
+            raise TruckCapacityError
+        for loaded in self._packages:
+            if package.id == loaded.id:
+                raise AlreadyOnTruckError
+        package.set_status(PackageStatus.Enroute)
+        self._packages.append(package)
+        self._pids.append(package.id)
+
+    def is_full(self) -> bool:
+        return len(self._packages) == self._capacity
+
+    def capacity_remaining(self) -> int:
+        if self.is_full():
+            return 0
+        return self._capacity - len(self._packages)
+
+    def optimize_delivery(self, _graph: Graph, _hub: Address) -> list[Address]:
+        from WGUPS.core import tsp
+        solver = tsp.Solver(use=tsp.Method.ConvexHull, graph=_graph, packages=self.packages, hub=_hub)
+        optimized = solver.solve()
+        return optimized
+
+    def clear(self):
+        self._pids.clear()
+        self._packages.clear()
+
 
 class TruckCapacityError(Exception):
+    """Raised when the truck is full, but load_package() was attempted"""
+    pass
+
+
+class AlreadyOnTruckError(Exception):
     """Raised when the truck is full, but load_package() was attempted"""
     pass

@@ -1,3 +1,3 @@
-from WGUPS.models.address import *
-from WGUPS.models.package import *
-from WGUPS.models.truck import *
+from .address import *
+from .package import *
+from .truck import *

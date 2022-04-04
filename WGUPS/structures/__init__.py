@@ -1,3 +1,3 @@
-from WGUPS.structures.graph import *
-from WGUPS.structures.hashtable import *
-from WGUPS.structures.linkedlist import *
+from .graph import *
+from .hashtable import *
+from .linkedlist import *

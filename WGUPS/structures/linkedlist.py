@@ -22,6 +22,7 @@ class Node(Generic[T]):
         return f'Node({self.data})'
 
 
+# noinspection DuplicatedCode
 class LinkedList(Generic[T]):
     """
     Doubly-Linked List Implementation

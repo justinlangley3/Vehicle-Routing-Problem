@@ -1,7 +1,6 @@
 import time
 from pathlib import Path
 from sys import stdout
-from typing import Generator, Any
 
 
 def get_platform() -> str:
@@ -63,11 +62,12 @@ def progress(it, steps: int = None, size: int = 65, file=stdout):
 
         file.write("{}|{}{}| {}%{}\r".format(f' ', bar * x, ' ' * chunk, percentage, f'{Style.END}'))
         file.flush()
+
     show(0)
 
     for i, item in enumerate(it):
         yield item
         show(i + 1)
-        time.sleep(0.001)
+        time.sleep(0.003)
     file.write("\n")
     file.flush()

@@ -24,7 +24,6 @@ def find_token(string: str, key: str) -> str | None:
     Args:
         string: a string to search
         key: a string containing the token key
-        delimiter: a single character delimiter
 
     Returns: str, the token found
 

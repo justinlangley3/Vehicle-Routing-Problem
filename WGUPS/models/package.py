@@ -3,11 +3,9 @@ from __future__ import annotations
 # STL Imports
 import datetime
 from dataclasses import dataclass
-from time import time
 from enum import Enum
 
 # Project Imports
-import WGUPS.util.time
 from WGUPS.models.address import Address
 from WGUPS.util.strings import tokenize, find_token, unpack_token
 
@@ -17,17 +15,15 @@ class Package:
     # class vars
     id: int
     address: Address
-    deadline: time
     mass: float
     notes: str
     status: PackageStatus
-    delivered: datetime
+    _deadline: datetime
+    _delivered: datetime
 
-    has_update = False
-    arrival: datetime.time = datetime.time()
-
-    def __post_init__(self):
-        self.delivered += datetime.timedelta(hours=8, minutes=0, milliseconds=0, microseconds=0)
+    has_update: bool = False
+    _in_dependency_chain: bool = False   # set True for all items linked in a dependency chain
+    arrival: datetime = None
 
     def __hash__(self) -> int:
         """
@@ -38,6 +34,26 @@ class Package:
 
         """
         return self.id
+
+    @property
+    def in_dependency_chain(self):
+        return self._in_dependency_chain
+
+    @in_dependency_chain.setter
+    def in_dependency_chain(self, b: bool) -> None:
+        self._in_dependency_chain = b
+
+    @property
+    def deadline(self) -> datetime:
+        return self._deadline
+
+    @property
+    def delivered(self) -> datetime:
+        return self._delivered
+
+    @delivered.setter
+    def delivered(self, d: datetime) -> None:
+        self._delivered = d
 
     def get_status(self) -> PackageStatus:
         """
@@ -74,7 +90,8 @@ class Package:
             return None
         else:
             value = unpack_token(token=token, delimited=True)
-            from WGUPS.util.time import time_from_string
+            from WGUPS.util.time import time_from_string, datetime_from_string
+            self.arrival = datetime_from_string(value)
             return time_from_string(value)
 
     def has_dependency(self) -> list[int] | None:
@@ -119,7 +136,12 @@ class Package:
         Returns:
 
         """
-        if datetime.time(8, 0) < self.deadline < datetime.time(23, 59, 59, 999999):
+        today = datetime.datetime.today()
+
+        day_ends = datetime.datetime(today.year, today.month, today.day, 23, 59, 59, 999999)
+        if self._deadline.hour < day_ends.hour \
+                and (self._deadline.minute < day_ends.minute) \
+                and (self._deadline.second < day_ends.second):
             return True
         return False
 
@@ -129,9 +151,11 @@ class Package:
         Returns: str
 
         """
+
         def _make_row(_props: tuple[str, ...], _widths: tuple[int, ...], _style: str, _tab: int = 2) -> str:
             from WGUPS.util import padr
             _row = ''
+
             for _i, _prop in enumerate(_props):
                 _row += ' ' * _tab
                 if len(_prop) <= _widths[_i]:
@@ -148,27 +172,30 @@ class Package:
         from WGUPS.cli.style import Style
         from WGUPS.util.time import to_digital_clock
 
-        # _cols = ('ID', 'Street', 'City', 'State', 'Zip', 'Mass (kg)' 'Status')
-        widths = (2, 38, 16, 5, 5, 9, 17)
-
+        widths = (2, 38, 16, 5, 5, 4, 21)
+        _status = ''
+        if self.status == PackageStatus.Delivered:
+            _status = str(self.status.value) + ' ' + to_digital_clock(self.delivered)
+        else:
+            _status = str(self.status.value)
         props = (str(self.id),
                  self.address.street,
                  self.address.city,
                  self.address.state,
                  self.address.postal,
                  str(self.mass),
-                 str(self.status.value),
-                 to_digital_clock(self.delivered))
+                 _status
+                 )
 
         if self.status == PackageStatus.Delivered:
             # color code delivered packages in green, include delivered time
             return _make_row(_props=props, _widths=widths, _style=Style.GREEN1)
         if self.status == PackageStatus.Enroute:
             # color code enroute packages in yellow, exclude delivered time
-            return _make_row(_props=props[:-1], _widths=widths[:-1], _style=Style.YELLOW2)
+            return _make_row(_props=props, _widths=widths, _style=Style.YELLOW2)
         if self.status == PackageStatus.Hub:
             # color code in hub packages in red, exclude delivered time
-            return _make_row(_props=props[:-1], _widths=widths[:-1], _style=Style.RED1)
+            return _make_row(_props=props, _widths=widths, _style=Style.RED1)
 
     def has_truck_requirement(self) -> int | None:
         """

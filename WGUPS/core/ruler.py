@@ -11,7 +11,7 @@ _EARTH_SEMI_MAJOR = 6378137.0
 _EARTH_SEMI_MINOR = 6356752.314245
 
 
-# noinspection NonAsciiCharacters
+# noinspection NonAsciiCharacters,PyPep8Naming,SpellCheckingInspection
 @dataclass()
 class Ruler:
     class Method(Enum):
@@ -166,21 +166,15 @@ class Ruler:
         λ = Δλ + 0
 
         while True:
-            t = math.sqrt(
-                (
-                        math.cos(U2) * math.sin(λ)
-                ) ** 2
-            )
-            t += (
-                    (
-                            math.cos(U1) * math.sin(U2) - math.sin(U1) * math.cos(U2) * math.cos(λ)
-                    ) ** 2
-            )
+            t = (math.cos(U2) * math.sin(λ)) ** 2
+            t += (math.cos(U1) * math.sin(U2) - math.sin(U1) * math.cos(U2) * math.cos(λ)) ** 2
             sinσ = t ** 0.5
-            cosσ = math.sin(U1) * math.sin(U2) - math.sin(U1) * math.cos(U2) * math.cos(λ)
+            cosσ = math.sin(U1) * math.sin(U2) + math.cos(U1) * math.cos(U2) * math.cos(λ)
             σ = math.atan2(sinσ, cosσ)
 
-            sinα = math.cos(U1) * math.cos(U2) * math.sin(λ) / sinσ
+            if sinσ == 0:   # points are coincident, avoid divide by zero
+                return 0.0
+            sinα = (math.cos(U1) * math.cos(U2) * math.sin(λ)) / sinσ
             cos_sq_α = 1 - sinα ** 2
             cos2σm = cosσ - 2 * math.sin(U1) * math.sin(U2) / cos_sq_α
             C = ƒ * cos_sq_α * (4 + ƒ * (4 - 3 * cos_sq_α)) * 0.0625

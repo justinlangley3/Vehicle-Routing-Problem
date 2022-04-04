@@ -1,15 +1,13 @@
-# STL Imports
-from datetime import datetime
+# STL
 from pathlib import Path
-
-# Package Imports
-from .environment import cls
-from .style import Style
 
 # Project Imports
 from WGUPS.core import Ruler
 from WGUPS.models import Address, Coordinate, Package
 from WGUPS.structures import Graph, HashTable
+# Package Imports
+from .environment import cls
+from .style import Style
 
 
 def get_last_folder_in_path(path: str) -> str:
@@ -98,7 +96,6 @@ def request_data_files(relative_paths: list[str], ext: str) -> tuple[Path, ...]:
             _row += '\n'
             return _row
         except AssertionError:
-            # TODO: implement catch here
             pass
 
     def _tabulate_props(_paths: list[Path]) -> str:
@@ -206,8 +203,8 @@ def build_packages(path: Path, addresses: list[Address]) -> HashTable[int, Packa
 
         package_data = row[-3:]
 
-        from WGUPS.util.time import time_from_string
-        package_deadline = time_from_string(package_data[0])
+        from WGUPS.util.time import datetime_from_string
+        package_deadline = datetime_from_string(package_data[0])
 
         package_mass = int(package_data[1])
         package_notes = package_data[2]
@@ -215,11 +212,11 @@ def build_packages(path: Path, addresses: list[Address]) -> HashTable[int, Packa
         from WGUPS.models import PackageStatus
         new_package = Package(id=package_id,
                               address=package_address,
-                              deadline=package_deadline,
                               mass=package_mass,
                               notes=package_notes,
-                              delivered=datetime.today(),
-                              status=PackageStatus.Hub
+                              status=PackageStatus.Hub,
+                              _deadline=package_deadline,
+                              _delivered=None
                               )
         # TODO: implement safe hashing for packages, so handling for updating package data can be implemented
         #       note: this may not be needed if the id is placed in the hashtable as the key
@@ -263,7 +260,7 @@ def build_graph(path: Path) -> tuple[Graph[Address], list[Address]]:
     #
     addresses = parse_gps_data(path)
     new_graph: Graph[Address] = Graph()
-    new_ruler = Ruler(unit=Ruler.Units.Miles)
+    new_ruler = Ruler(unit=Ruler.Units.Miles, calc_method=Ruler.calc_method.Vincenty)
 
     from WGUPS.cli.environment import progress
     print(f'Processing{Style.END} {Style.RED1}{Style.UNDERLINE}Locations{Style.END}\n')

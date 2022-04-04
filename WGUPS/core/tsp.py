@@ -27,7 +27,13 @@ class Solver:
                 # not implemented, yet
                 pass
             case Method.ConvexHull:
-                return self._convex_hull()
+                hull = self._convex_hull()
+                if hull is None:
+                    path = [self.hub]
+                    path.extend([package.address for package in self.packages])
+                    path.append(self.hub)
+                    return path
+                return hull
             case Method.Genetic:
                 # not implemented, yet
                 pass
@@ -123,7 +129,8 @@ class Solver:
 
         return hull
 
-    def _meta_ACO(self):
+    @staticmethod
+    def _meta_aco():
         # Set parameters, initialize pheromone trails
         # SCHEDULE_ACTIVITIES
         #   ConstructAntSolutions
@@ -133,7 +140,8 @@ class Solver:
         print("Not yet implemented")
         return
 
-    def _meta_genetic(self):
+    @staticmethod
+    def _meta_genetic():
         # Steps:
         # 1. Initialize population
         # 2. Fitness Function
@@ -143,13 +151,13 @@ class Solver:
         print("Not yet implemented")
         return
 
-    def _nearest_neighbor(self):
+    @staticmethod
+    def _nearest_neighbor():
         # Steps:
         # 1. Initialize dataset
-        # 2. Choose value of K-nearest data points (can be any integer)
-        # 3. For each point:
-        #    - Calculate cost to other points
-        #    - Select for the lowest cost (Euclidean distance)
+        # 3. For each visited point:
+        #    - Graph search neighbors
+        #    - Select nearest
         # 4. Assemble path
         print("Not yet implemented")
         return
