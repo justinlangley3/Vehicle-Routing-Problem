@@ -153,6 +153,11 @@ class Hub:
         Big-O Analysis:
           O(N^2): Expansion/Resolution increases the search space to n * n
                   Every n item, must be compared to every n other item.
+                  The worst case considers that every package is a dependency of every other.
+          Average case is O(n•k):
+            This considers that the number of dependencies is likely a lot smaller than the total search space, and
+            the total package data set need only be iterated for the number of packages with dependencies or
+            depended on by another.
 
         Example:
             Say we have the following subsets,
@@ -333,26 +338,24 @@ class Hub:
 
         Big-O Analysis:
         Worst Case:
-          O(N^2):
+          O(m•n•logn):
                 Factors:
-                    N items (packages) are iterated for updating the remaining queue
-                    M items (loaded packages) per truck are iterated for updating the remaining queue
-                Influenced by: Every package remaining is iterated for every truck.
-                Each truck is looped, but the while loop in each truck terminates when:
-                    - The truck is full.
-                    - No packages remain.
-                Additionally, N decreases by a certain property of M, the truck capacity, each iteration
-                Lastly, python's timsort is being called every iteration to sort the priority queue
-                This leads to O(N^2) because we have to iterate every package and also sort remaining packages,
-                upon truck iteration
-        Average Case:
-          O(N):
-                This is case if timsort is running optimally, and N remains to decrease by a factor of M,
-                where N is packages remaining and M is packages loaded on each truck iteration
-          In essence, we're hoping for increases in efficiency in loading as time continues, regardless of large inputs
+                    n items (packages) are iterated for updating the remaining queue
+                    n items (packages) are sorted in the remaining queue to perform a priority queue
+                    m items (loaded packages) per truck are iterated for updating the remaining queue
+                Each item in the complete package data set is iterated by the number of trucks to build our list of
+                remaining package. Since, m has some appropriate real world limit, and is guaranteed to include only
+                some subset of n it should be negligible, but we include it anyways.
+                (i.e. something like 1 truck per 1 package is insane, or 1 truck with all the packages is also insane).
+                Once the list of remaining packages is formed, it gets sorted (nlogn) to form a priority queue.
+
+                Since, we iterate our list twice (once with sort operations) this gives us O(n * logn).
+                We don't perform any additional iterations for any item in n, so it doesn't grow exponentially.
+                So, instead of 2n, for iterating it twice, we drop the constant.
+
+                This leaves us with O(m•n•logn).
 
         On function call, if no packages remain, terminates immediately
-
         Load order:
             Priority packages (including late arrivals, or any included dependencies)
               Note: All below check described in Standard additionally occur on all priority packages
@@ -367,6 +370,7 @@ class Hub:
 
         """
 
+        # sequence of constant time operations, ignored in the Big-O analysis
         def receive_update(_to_update: Package):
             """Send an update to a package"""
             # The task requirements state that WGU doesn't know what the updates are until 10:30 am.
@@ -385,6 +389,7 @@ class Hub:
                 to_address = [address for address in self._addresses if address.street == '410 S State St']
                 _to_update.address = to_address.pop()
 
+        # sequence of constant time operations, ignored in the Big-O analysis
         def is_loadable(_id: int, _to_load: Package, _current: Truck) -> bool:
             """If even one check fails the package won't be loaded"""
             if _to_load.has_truck_requirement():
@@ -406,6 +411,11 @@ class Hub:
 
         def load(_next: Package, _current: Truck) -> None:
             """Load the next package onto the current truck, including any dependencies"""
+            # Big-O(n + k):
+            #   Only when a package is in a dependency chain, requires checking n dependency chains with k items
+            #   in each. Each chain will be a subset of the complete package data set, unless there is one dependency
+            #   chain containing all packages, where it becomes O(n).
+            #   If there are no dependencies then this method runs in constant time.
             if _next.has_invalid_flag():
                 receive_update(_to_update=_next)
                 _current.load_package(_next)
@@ -421,13 +431,44 @@ class Hub:
                         self._update_master(package=dep)
                     self._dependency_chains.remove(deps)
 
-        def update_remaining():
-            """Forcibly update the list of remaining packages"""
+        def update_remaining() -> None:
+            """
+            Forcibly update the list of remaining packages
+            Big-O Analysis:
+                O(m•n):
+                        Data Set Operations (partial):
+                        We consider getting the list of loaded package ids as O(m + k).
+                        Each truck must be iterated and an empty list extended by a factor of k per truck,
+                        so is influenced linearly by O(k), for k items added the number of packages loaded per truck,
+                        which can vary in size, but artificially limited by truck capacity (16 in our case). So, k
+                        drops out to be a sequence of constant time operations. When the number of trucks becomes
+                        very large, we are performing this operation on each truck.
+
+                        Consider in the real world, there will be a maximum number of trucks we have.
+                        Also, m is guaranteed to be less the number of delivered packages due to the truck capacity.
+
+                        It makes sense to characterize this operation separately as m is therefore a tunable parameter,
+                        and guaranteed to be less than n in our use case i.e. we can't have more packages loaded
+                        than total packages than we have.
+                        Thus, the worst case of this operation is O(m), where m is the number of trucks iterated.
+
+                        Data Set Operations (complete):
+                        Additionally, we consider building the list of remaining packages to be O(n).
+                        Each package in the complete data set must be compared to the smaller subset of package ids
+                        per loaded truck, by calling the 'in' operator ...
+
+                        Therefore, in the worst case we are performing 16 comparisons per package in complete
+                        list of all packages multiplied by the number of trucks.
+
+                        Combining the worst case of each we end up with O(m•n).
+
+            Returns: None
+
+            """
             # Remaining = (Total - currently loaded - delivered)
-            _loaded = list()
-            for _t in self._trucks:
-                for _p in _t:
-                    _loaded.append(_p.id)
+            _loaded: list[int] = []
+            for _truck in self._trucks:
+                _loaded.extend(_truck.pids)
             for _p in self._packages:
                 if _p.id not in _loaded:
                     if _p.status != PackageStatus.Delivered:
@@ -455,6 +496,7 @@ class Hub:
                 queue = [self._remaining[-1]]
             else:
                 # Transform remaining items into a priority queue
+                # O(nlogh), the complexity of python's internal timsort
                 queue = sorted(self._remaining, key=operator.attrgetter('deadline'), reverse=True)
 
             # while truck has capacity remaining
@@ -462,9 +504,11 @@ class Hub:
                 if queue:  # still has items,
                     # continue loading
                     to_load = queue.pop()
+
                     if is_loadable(_id=i, _to_load=to_load, _current=truck):
                         from WGUPS.models.truck import AlreadyOnTruckError
                         try:
+                            # O(n * m)
                             load(_next=to_load, _current=truck)
                         except AlreadyOnTruckError:
                             # package is already on the truck,
@@ -487,8 +531,31 @@ class Hub:
         Core algorithm for controlling both loading and delivery of packages onboard trucks.
 
         Big-O Analysis:
-          O(N^2) - The combination in runtime complexity of the path optimization algorithm,
-                   and the runtime complexity of the load optimization algorithm
+          O(m•n^2•logn):
+            The combination of the runtime complexity of the load optimization algorithm,
+            the path optimization algorithm, and the delivery algorithm.
+
+            The load optimization is (m•n•logn), where m is # trucks and n is # packages
+            The path optimization is (n^2•logh), where h is the subset of n that forms the boundary (hull)
+            The delivery algorithm is O(n), where n is the number of edges in the path visited
+
+            We need to simplify the complexities somewhat to find a more easily understandable upper bound.
+            One thing is the path optimization can be considered O(n^2) since the insertion sort inside it
+            completely dwarfs the complexity to find the hull.
+
+            Combining it we get: O(m•n^2•logn), we can ignore the linear complexity of the delivery algorithm.
+
+            With this, we know our algorithm is greater than n^2, but we don't think it's enough to call it
+            n^3, since m, the number of truck operations performed is likely to be far smaller than n.
+
+            That said, the combination of our algorithms has quite a bad runtime, but it beats out the time complexity
+            to brute force the traveling salesperson problem, which would be O(n!).
+
+            If we optimized our data structures further.
+            One example, we could create layers to our convex hull algorithm, where we find successive convex hulls on
+            the inner points within the boundary of the hull. Then, with a divide and conquer approach they could be
+            merged to form the optimal path. With this kind of approach our solution should easily go to linearithmic
+            time complexity.
 
         Returns: None
 
@@ -542,8 +609,22 @@ class Hub:
         Additionally, updates departure times, stores trips, and trip distances in their data structures.
 
         Complexity:
-        O(n + m) - number of packages in the truck by number of edges in the path,
-                   since they are the same, runtime is linear in the average case
+            O(n):
+               number of edges in the path, by the number of packages in the truck
+
+               For our purpose, since the truck capacity is fixed and small, we will consider package searches per
+               edge iteration to be a constant time operation.
+
+               The number of packages in the truck also reduces by 1 each edge iteration, reducing further iterations
+               ( the linear sequence k(k-1), where k is truck capacity ).
+
+               Therefore, the runtime is linear by the number of edges in the path O(n).
+
+               If the Truck included a HashTable of address, package key/value pairs, this could be further guaranteed
+               to be O(n) as then the ending Address of the iterated edge would be the key to access the package
+               onboard the truck. In this case only the edges would have to be iterated once.
+               We will treat this as if we had an optimal solution to simplify the Big-O analysis of our
+               truck dispatching algorithm
 
         Args:
             trip_id: int
@@ -593,7 +674,6 @@ class Hub:
         for i, edge in enumerate(edges):
             t = calc_travel_time(edge[2], truck.speed)
             clock += t  # update clock with current package
-
             for package in truck:
                 if package.address == edge[1]:
                     package.delivered = clock
@@ -632,7 +712,7 @@ class Hub:
 
     def trip_distance_by_truck(self, truck_id: int) -> str:
         """Compute distance of all trips for a given truck."""
-        stats = f'\n{Style.YELLOW2}Truck {Style.UNDERLINE}#00{truck_id + 1}:{Style.END}\n\n'
+        stats = f'\n{Style.YELLOW2}Truck {Style.UNDERLINE}#00{truck_id + 1}:{Style.END}\n'
         total = round(sum(self._trip_distances[truck_id]), 1)
         stats += f'Total Distance: {total} mi\n\n'
         return stats
@@ -797,6 +877,10 @@ class Hub:
         Creates a 'snapshot' for packages at the requested time.
         Since all trips/routes are precomputed a clock 'unwinding' takes place to build the printout.
         Times can be 24hr format or include am/pm.
+
+        Big-O Analysis:
+            Approx. O(nk), we iterate our package data structure 3 times to get delivery information.
+
 
         Args:
             at_time: str
