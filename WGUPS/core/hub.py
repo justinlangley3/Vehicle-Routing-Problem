@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # STL
+import math
 import operator
 import time
 from copy import copy, deepcopy
@@ -37,7 +38,7 @@ class Hub:
     _dependency_chains: list[list[Package]]
 
     # additional data structures for data related to delivery trips
-    _trips: dict[datetime, list[int]]
+    _trips: dict[datetime, tuple[int, list[int]]]
     _trip_distances: list[list[float]]
     _departure_times: list[datetime]
 
@@ -47,7 +48,7 @@ class Hub:
         self._addresses = addresses
         self._graph = graph
         self._packages = packages
-        self._trucks = [Truck() for _ in range(num_trucks)]
+        self._trucks = [Truck(i) for i in range(num_trucks)]
         # END Initialize primary data structures
 
         # BEGIN Initialization of Package Categories
@@ -86,7 +87,15 @@ class Hub:
         # setup containers for trip data
         self._trips = {}
         # initialize an empty list for containing last departure time by truck
-        self._trip_distances = [list() for _ in range(len(self._trucks))]
+        trip_count = math.ceil(len(self._packages) / len(self._trucks) / 16) + 1
+
+        # ensuring we have a container big enough for both trucks
+        # and that the containers are the same size, so we don't
+        # run into issues running out of indices when looping
+        dummy = []
+        for _ in range(trip_count):
+            dummy.append(0.0)
+        self._trip_distances = [copy(dummy) for _ in range(len(self._trucks))]
 
         today = datetime.today()
         # initialize all departure time 1 microsecond apart to keep keys unique
@@ -106,14 +115,14 @@ class Hub:
         # The class object is now ready for user interaction.
 
     @property
-    def trucks(self) -> int:    # make it easy, externally, to get the truck count
+    def trucks(self) -> int:  # make it easy, externally, to get the truck count
         """The number of trucks in the hub"""
         return len(self._trucks)
 
     #
     # BEGIN Helper Methods
     #
-    def _prepare_shipments(self) -> None:   # Unused, marked for delete
+    def _prepare_shipments(self) -> None:  # Unused, marked for delete
         """Mark all packages as ready for delivery"""
         for package in self._packages:
             package.set_status(PackageStatus.Hub)
@@ -130,6 +139,7 @@ class Hub:
     def _update_master(self, package: Package) -> None:
         """Update a package in the master HashTable"""
         self._packages[int(package.id)] = package
+
     #
     # End Helper Methods
     #
@@ -139,6 +149,10 @@ class Hub:
         """
         Builds package dependency chains i.e. groups of packages that must be delivered together.
         Once dependencies are resolved, the self._dependency_chain member is updated
+
+        Big-O Analysis:
+          O(N^2): Expansion/Resolution increases the search space to n * n
+                  Every n item, must be compared to every n other item.
 
         Example:
             Say we have the following subsets,
@@ -254,6 +268,7 @@ class Hub:
         for chain in self._dependency_chains:
             if p in chain:
                 return chain
+
     #
     # END Dependency Chain Methods
     #
@@ -303,6 +318,7 @@ class Hub:
         _print_stats()
         input(f'Press <{Style.RED1}Enter{Style.END}> to continue ...\n{Style.GREEN2}> {Style.END}')
         cls()
+
     #
     # END Package Categorization Methods
     #
@@ -312,26 +328,42 @@ class Hub:
     #
     def _load_remaining(self) -> None:
         """
-        Performs sorting packages onto trucks for the given trip.
+        Core algorithm, which performs sorting packages onto trucks for the current set of trips.
         A priority queue is used to load packages with the earliest deadline first.
 
-        ~ O(N * M), Influenced by: ( total packages * number of trucks )
-                    each truck is looped, but the while loop in each truck terminates when:
+        Big-O Analysis:
+        Worst Case:
+          O(N^2):
+                Factors:
+                    N items (packages) are iterated for updating the remaining queue
+                    M items (loaded packages) per truck are iterated for updating the remaining queue
+                Influenced by: Every package remaining is iterated for every truck.
+                Each truck is looped, but the while loop in each truck terminates when:
                     - The truck is full.
                     - No packages remain.
-
-        Remaining checks when a package is pulled off the queue:
-            - Has a truck requirement.
-            - Was delayed, but it's arrival time has elapsed.
-            - In a dependency chain. (If there is room on the truck, the package + all others in chain are loaded)
-            - Address is invalid, but its update time has elapsed.
+                Additionally, N decreases by a certain property of M, the truck capacity, each iteration
+                Lastly, python's timsort is being called every iteration to sort the priority queue
+                This leads to O(N^2) because we have to iterate every package and also sort remaining packages,
+                upon truck iteration
+        Average Case:
+          O(N):
+                This is case if timsort is running optimally, and N remains to decrease by a factor of M,
+                where N is packages remaining and M is packages loaded on each truck iteration
+          In essence, we're hoping for increases in efficiency in loading as time continues, regardless of large inputs
 
         On function call, if no packages remain, terminates immediately
 
         Load order:
-            Priority packages
+            Priority packages (including late arrivals, or any included dependencies)
+              Note: All below check described in Standard additionally occur on all priority packages
+            Standard:
+              Any not in the Priority category, including:
+              - Has truck requirement
+              - Late arrivals
+              - Dependency chains
+              - Packages with an invalid address, but have an update available
 
-        Returns:
+        Returns: None
 
         """
 
@@ -353,7 +385,7 @@ class Hub:
                 to_address = [address for address in self._addresses if address.street == '410 S State St']
                 _to_update.address = to_address.pop()
 
-        def is_loadable(_id: int, _to_load: package, _current: Truck) -> bool:
+        def is_loadable(_id: int, _to_load: Package, _current: Truck) -> bool:
             """If even one check fails the package won't be loaded"""
             if _to_load.has_truck_requirement():
                 if _to_load.has_truck_requirement() != _id + 1:
@@ -389,14 +421,6 @@ class Hub:
                         self._update_master(package=dep)
                     self._dependency_chains.remove(deps)
 
-        def find_earliest_deadline() -> Package:
-            """Find the package with the earliest deadline"""
-            _earliest: Package = self._remaining[0]
-            for _p in self._packages:
-                if _p.deadline < _earliest.deadline:
-                    _earliest = _p
-            return _earliest
-
         def update_remaining():
             """Forcibly update the list of remaining packages"""
             # Remaining = (Total - currently loaded - delivered)
@@ -407,7 +431,7 @@ class Hub:
             for _p in self._packages:
                 if _p.id not in _loaded:
                     if _p.status != PackageStatus.Delivered:
-                        self._remaining.append(_p)
+                        self._remaining.append(deepcopy(_p))
 
         if self._remaining is None:
             return
@@ -415,77 +439,114 @@ class Hub:
         today = datetime.today()  # time of day package updates are received
         update_time = datetime(today.year, today.month, today.day, 10, 20, 0, 0)
 
-        queue = []  # dummy queue, so we can force it to clear, as needed
+        # Initialize a queue to be used as a Priority Queue
+        queue = []  # dummy queue
         for i, truck in enumerate(self._trucks):
+            # Clear of any previous iteration
+            # ( guarding against loading the same items more than once )
             queue.clear()
             self._remaining.clear()
             update_remaining()
 
+            # Discontinue if no packages remain to load
             if not self._remaining:
                 return
             if len(self._remaining) == 1:
-                earliest = self._remaining[-1]
+                queue = [self._remaining[-1]]
             else:
-                earliest = find_earliest_deadline()
+                # Transform remaining items into a priority queue
+                queue = sorted(self._remaining, key=operator.attrgetter('deadline'), reverse=True)
 
-            queue = [(earliest.deadline, earliest)]
-            for package in self._remaining:
-                if not (package.id == earliest.id):
-                    queue.append((package.deadline, package))
-
-            queue_contains = []
-            queue_contains.extend(item[1].id for item in queue)
-            queue = sorted(queue, reverse=True)
+            # while truck has capacity remaining
             while not truck.is_full():
-                if queue:
-                    to_load = queue.pop()[1]
+                if queue:  # still has items,
+                    # continue loading
+                    to_load = queue.pop()
                     if is_loadable(_id=i, _to_load=to_load, _current=truck):
                         from WGUPS.models.truck import AlreadyOnTruckError
                         try:
                             load(_next=to_load, _current=truck)
                         except AlreadyOnTruckError:
+                            # package is already on the truck,
+                            # proper guarding is in place to simply consume the Error
                             pass
                 else:
+                    # stop loading
                     break
+
+        # Finished loading trucks,
+        # Clear the remaining package list
         self._remaining.clear()
+
+        # Create a new list of remaining items,
+        # one that won't include what was loaded
         update_remaining()
 
-    def _dispatch_trucks(self):
+    def _dispatch_trucks(self) -> None:
+        """
+        Core algorithm for controlling both loading and delivery of packages onboard trucks.
+
+        Big-O Analysis:
+          O(N^2) - The combination in runtime complexity of the path optimization algorithm,
+                   and the runtime complexity of the load optimization algorithm
+
+        Returns: None
+
+        """
+        # inform the user of what we're currently processing
         from WGUPS.cli.environment import progress
         print(f'Processing Delivery {Style.RED1}{Style.UNDERLINE}Routes:{Style.END}\n')
-        count = 1
-        while self._remaining:
 
+        # use a list for storing # of trips per truck, as it may vary
+        trip_counts = [0] * len(self._trucks)
+        while self._remaining:  # while packages still remain to be delivered
+            # Load packages onto trucks
             self._load_remaining()
-            print(f'Computing delivery data for trip: {count} ...')
+
+            # For each truck, perform with progress indication
+            print('Computing optimal trips: ', trip_counts)
             for i, truck in enumerate(progress(self._trucks)):
-                time.sleep((3 % count) * 0.5)
+                time.sleep(sum(trip_counts) * 0.1)
                 if truck.packages is not None:
+                    # Truck has packages to deliver,
+                    # Optimize the route plan ( O(nlogh) runtime for convex hull, output sensitive )
                     path = truck.optimize_delivery(_graph=self._graph, _hub=self.HUB)
-                    if len(path) > 2:  # at least one package to deliver, the path includes the hub twice
-                        self._deliver_packages_in_truck(truck_id=i, truck=truck, path=path)
+
+                    # Check path length, note: the path includes the hub twice to explain the condition check
+                    if len(path) > 2:
+                        # at least one package is on the truck
+
+                        # Perform package delivery
+                        self._deliver_packages_in_truck(trip_id=trip_counts[i], truck=truck, path=path)
+
                         for package in truck.packages:
                             self._update_master(package)
-                        truck.clear()  # reset the truck for next iteration of load/delivery
-                else:
-                    # prevents deadlock, if packages remain, but require an update, haven't arrived, yet, etc.
-                    # in that case, the current departure time needs to incremented until the issue resolves.
-                    self._departure_times[i] += timedelta(seconds=1)
-                    continue
-            print()
-            count += 1
 
-    def _deliver_packages_in_truck(self, truck_id: int, truck: Truck, path: list[Address]) -> None:
+                        # reset the truck for next iteration of load/delivery
+                        truck.clear()
+                    trip_counts[i] += 1
+                else:
+                    # No packages are on the truck,
+                    # We must be careful to guard against deadlock here (infinite looping)
+
+                    # If we are here, packages remain, but require an update, haven't arrived, yet, etc.
+                    # in that case, the current departure time needs to incremented until the departure time
+                    # has progressed far enough for those issues to resolve the checks in the loading routine
+                    self._departure_times[i] += timedelta(seconds=1)
+                    continue  # proceed with an updated departure time
+            print()  # print empty line
+
+    def _deliver_packages_in_truck(self, trip_id: int, truck: Truck, path: list[Address]) -> None:
         """
         Handles computing route distance and delivery time computations.
         Additionally, updates departure times, stores trips, and trip distances in their data structures.
 
         Complexity:
         O(n + m) - number of packages in the truck by number of edges in the path,
-                   since this number is the same, runtime is on average O(n)
+                   since they are the same, runtime is linear in the average case
 
         Args:
-            truck_id: int
+            trip_id: int
             truck:  Truck
             path: list[Address]
 
@@ -519,18 +580,17 @@ class Hub:
                 _path.remove(_current)
             for _distance in _seen:
                 _total += _distance[2] if _distance[2] is not None else 0.0
+            self._trip_distances[truck.truck_id][trip_id] += _total
             return _total, _seen
 
         # store a copy of package ids in the trip, in a dict searchable by a datetime key
-        clock = self._departure_times[truck_id]
+        clock = self._departure_times[truck.truck_id]
         pids = copy(truck.pids)
-        self._trips[clock] = pids
+        self._trips[clock] = (truck.truck_id, pids)
 
         # call subroutine to calculate distances
         total_distance, edges = _calc_distances(_path=path)
         for i, edge in enumerate(edges):
-            if i == len(edges):
-                break
             t = calc_travel_time(edge[2], truck.speed)
             clock += t  # update clock with current package
 
@@ -545,9 +605,7 @@ class Hub:
             # this will be the next departure time, unless the truck must wait
             t = calc_travel_time(edges[-1][2], truck.speed)
             clock += t
-
-            self._departure_times[truck_id] = clock
-            self._trip_distances[truck_id].append(total_distance)
+            self._departure_times[int(truck.truck_id)] = clock
 
     #
     # END Truck Loading and Delivery Methods
@@ -575,18 +633,14 @@ class Hub:
     def trip_distance_by_truck(self, truck_id: int) -> str:
         """Compute distance of all trips for a given truck."""
         stats = f'\n{Style.YELLOW2}Truck {Style.UNDERLINE}#00{truck_id + 1}:{Style.END}\n\n'
-        trips = self._trip_distances[truck_id::len(self._trucks)]
-        total = 0.0
-        for i, trip in enumerate(trips):
-            total += sum(trip)
-        stats += f'Total Distance: {round(total, 1)} mi\n\n'
+        total = round(sum(self._trip_distances[truck_id]), 1)
+        stats += f'Total Distance: {total} mi\n\n'
         return stats
 
     def trip_distance(self, truck_id: int, trip_id: int) -> float:
         """Compute the distance of a single trip by a given truck."""
-        truck = self._trip_distances[truck_id::len(self._trucks)]
-        for i, trip in enumerate(truck):
-            return round(trip[trip_id], 1)
+        truck = self._trip_distances[truck_id]
+        return round(truck[trip_id], 1)
 
     def route_plan_by_truck_id(self, key: int):
         """Retrieve the route plans for a given truck"""
@@ -595,16 +649,27 @@ class Hub:
         trips = []
         for trip in self._trips.values():
             trips.append(trip)
-        searched = trips[key::len(self._trucks)]
-        for i, trip in enumerate(searched):
-            stats += f'Trip {i + 1}:\n'
+
+        i = 0
+        for trip in self._trips.values():
+            if trip[0] != key:
+                continue
+
+            # f-string would update the variable if we add 1
+            # that would cause route data lookups to display incorrect results
+            j = i + 1
+
+            stats += f'Trip {j}:\n'
             stats += f'Planned Mileage: {self.trip_distance(truck_id=key, trip_id=i)} mi\n'
-            packages = [copy(self._packages[int(pid)]) for pid in trip]
+            packages = [copy(self._packages[int(pid)]) for pid in trip[1]]
             packages = sorted(packages, key=operator.attrgetter('delivered'))
             for package in packages:
                 package.set_status(PackageStatus.Hub)
                 stats += package.printable() + '\n'
+            i += 1
+
         return stats
+
     #
     # END Statistics Methods
     #
@@ -616,7 +681,7 @@ class Hub:
         """Finds all delivered packages at the provided time"""
         _all_delivered = []
         for _i, _package in self._packages.items():
-            if _package.delivered <= _time:
+            if _package.delivered and _package.delivered <= _time:
                 _all_delivered.append(copy(_package))
         return sorted(_all_delivered, key=operator.attrgetter('delivered'), reverse=True)
 
@@ -625,43 +690,54 @@ class Hub:
         # microseconds are used to differentiate 'unique' initial departure times
         _all_enroute = [list() for _ in range(len(self._trucks))]
         _trucks = self._retrieve_trip_window(_time)
-        for _i, _truck in enumerate(_trucks):
-            for _id in _truck:
-                if self._packages[int(_id)].delivered > _time:
-                    copy_of = copy(self._packages[int(_id)])
+        if not _trucks:
+            return [[]]
+        for _i, _ids in enumerate(_trucks):
+            if not _ids:
+                return [[]]
+            _truck_id, _pids = _ids[0], _ids[1]
+            for _pid in _pids:
+                if _truck_id == _i and self._packages[int(_pid)].delivered > _time:
+                    copy_of = copy(self._packages[int(_pid)])
                     copy_of.set_status(PackageStatus.Enroute)
                     _all_enroute[_i].append(copy_of)
         for _i in range(len(_all_enroute)):
-            _all_enroute[_i] = sorted(_all_enroute[_i], key=operator.attrgetter('delivered'), reverse=True)
+            # Sort packages so they are shown in delivery sequence
+            _all_enroute[_i] = sorted(_all_enroute[_i], key=operator.attrgetter('delivered'))
         return _all_enroute
 
-    def find_undelivered_at_time(self, _time) -> [list[Package]]:
+    def find_undelivered_at_time(self, _time) -> list[Package]:
         """Finds all undelivered packages at the provided time"""
         all_delivered = []
         enroute_ids = []
         _trucks = self._retrieve_trip_window(_time)
-        for _truck in _trucks:
-            for _id in _truck:
-                if self._packages[_id].delivered > _time:
-                    enroute_ids.append(_id)
+        if not _trucks:
+            return []
+        for _i, _ids in enumerate(_trucks):
+            if not _ids:
+                return []
+            _truck_id, _pids = _ids[0], _ids[1]
+            for _pid in _pids:
+                if self._packages[_pid].delivered > _time:
+                    enroute_ids.append(_pid)
         for _package in self._packages:
-            if _package.delivered > _time:
+            if _package.delivered and _package.delivered > _time:
                 if _package.id not in enroute_ids:
                     copy_of = copy(_package)
                     copy_of.set_status(PackageStatus.Hub)
                     all_delivered.append(copy_of)
         return sorted(all_delivered, key=operator.attrgetter('delivered'), reverse=True)
 
-    def _retrieve_trip_window(self, _time: datetime) -> list[list[int]]:
+    def _retrieve_trip_window(self, _time: datetime) -> list[tuple[int, list[int]]]:
         """Finds the trip data in the time window of a searched time and returns truck trips occurring at that time"""
         _time += timedelta(microseconds=len(self._trucks))
-        _time_windows: list[list[int]] = [list() for _ in range(len(self._trucks))]
+        _time_windows: list[tuple[int, list[int]]] = [tuple() for _ in range(len(self._trucks))]
         _i = 0
         for _departure, _pids in self._trips.items():
             if _departure <= _time:
                 # storing the most recent trip at the given time for each truck
                 # the current iteration mod len(trucks) will always give the correct truck
-                _time_windows[_i % len(self._trucks)] = _pids
+                _time_windows[_pids[0]] = _pids
             _i += 1
         return _time_windows
 
@@ -708,6 +784,7 @@ class Hub:
             if package.mass == int(mass):
                 found.append(copy(package))
         return sorted(found, key=operator.attrgetter('id'))
+
     #
     # END Search/Lookup Methods
     #
@@ -719,7 +796,7 @@ class Hub:
         """
         Creates a 'snapshot' for packages at the requested time.
         Since all trips/routes are precomputed a clock 'unwinding' takes place to build the printout.
-        Times can be 24hr format or include am/pm
+        Times can be 24hr format or include am/pm.
 
         Args:
             at_time: str
@@ -729,7 +806,7 @@ class Hub:
         """
 
         # noinspection DuplicatedCode
-        def _make_snapshot_printable(_time, _at_hub: list[Package], _delivered: list[Package],
+        def _make_snapshot_printable(_search_key, _time, _at_hub: list[Package], _delivered: list[Package],
                                      _enroute: list[list[Package]]) -> str:
             """Make a printout view of the packages and their status"""
             # TODO: Apparently, f-strings are precomputed during initialization
@@ -761,13 +838,26 @@ class Hub:
                 # end update f-string default
 
                 for _package in _at_hub:
+                    # display package that was updated properly
+                    # a 'history' of changes would be stored in the object, but,
+                    # for now we're reverting it manually
+                    today = datetime.today()
+                    update = datetime(today.year, today.month, today.day, 10, 20)
+                    if _package.id == 9:
+                        if _search_key < update:
+                            _package.address = self._addresses[12]
+                        else:
+                            _package.address = self._addresses[19]
+
                     _hub_view += _package.printable() + '\n'
                 _hub_view += f'{Style.RED1}{separator}{Style.END}\n'
+            else:
+                _hub_view += f'{Style.END}{Style.RED2}{Style.BOLD}No packages in hub at this time.{Style.END}\n\n'
 
             _enroute_view = ''
             _enroute_view_default = ''
             if _enroute:
-                for i, _truck in enumerate(_enroute):
+                for i, _truck in enumerate(enroute):
                     _enroute_view += f'{Style.YELLOW2}Enroute on ' \
                                      f'{Style.UNDERLINE}Truck #00{i + 1}' \
                                      f'{Style.END}{Style.YELLOW2}:\n{Style.END}'
@@ -808,13 +898,21 @@ class Hub:
 
             return _snapshot
 
-        from WGUPS.util.time import datetime_from_string
-        search_key = datetime_from_string(at_time)
+        # transform user search input into a datetime object
+        from WGUPS.util.time import datetime_from_valid_input
+        search_key = datetime_from_valid_input(at_time)
 
+        # build the 'views' by category
+        at_hub = self.find_undelivered_at_time(_time=search_key)
         enroute = self.find_enroute_at_time(_time=search_key)
         delivered = self.find_delivered_at_time(_time=search_key)
-        at_hub = self.find_undelivered_at_time(_time=search_key)
-        snapshot = _make_snapshot_printable(_time=at_time, _at_hub=at_hub, _delivered=delivered, _enroute=enroute)
+
+        # make a printout with the categorized package data
+        snapshot = _make_snapshot_printable(_at_hub=at_hub,
+                                            _delivered=delivered,
+                                            _enroute=enroute,
+                                            _time=at_time,
+                                            _search_key=search_key)
         return snapshot
     #
     # END Special Print Methods

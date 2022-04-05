@@ -46,7 +46,7 @@ class App:
 
         # pick up at the point where main() handed over execution
         # the user should be informed that all the data has been crunched
-        input(f'Delivery data has been computed.\nPress <{Style.RED2}ENTER{Style.END}> to continue ...'
+        input(f'Delivery data has been computed.\n\nPress <{Style.RED2}ENTER{Style.END}> to continue ...'
               f'{Style.GREEN1}\n> {Style.END}')
 
         # clear the screen before entering the infinite loop for the CLI
@@ -171,16 +171,16 @@ class App:
 
                 # User is looking up all packages at a given time
                 case 'lookup':
-                    text = input(f'Please enter a time in the format {Style.RED2}\'HH:MM AM/PM\'{Style.END}:\n'
-                                 f'{Style.GREEN1}> {Style.END}')
-                    try:
-                        from WGUPS.util import time_from_string
-                        time_from_string(text)
-                        print(self.hub.snapshot(text))
+                    from WGUPS.util import time_from_string
+                    from .util import is_time_valid
+                    search_key = input(f'Please enter a time in 24-hr format {Style.RED2}\'HH:MM\'{Style.END}:\n'
+                                       f'{Style.GREEN1}> {Style.END}')
+                    if is_time_valid(search_key) is True:
+                        print(self.hub.snapshot(search_key))
                         input(f'Press <{Style.RED2}ENTER{Style.END}> to continue ...'
                               f'{Style.GREEN1}\n> {Style.END}')
                         clear()
-                    except IndexError:
+                    else:
                         text = f'{Style.RED2}Format Invalid.{Style.END}\n>' \
                                f'Press <{Style.RED2}ENTER{Style.END}> to continue ...' \
                                f'{Style.GREEN1}\n> {Style.END}'
@@ -345,7 +345,7 @@ class App:
                     text = f'Please input truck ID:\n'
                     text += f'{Style.GREEN1}> {Style.END}'
                     search_key = input(text)
-                    if is_valid_numeric(search_key) and 0 < int(search_key) <= self.hub.trucks + 1:
+                    if is_valid_numeric(search_key) and 0 < int(search_key) < self.hub.trucks + 1:
                         input(self.hub.route_plan_by_truck_id(int(search_key) - 1))
                     else:
                         text = f'{Style.RED2}Input was not a valid truck ID.{Style.END}\n'

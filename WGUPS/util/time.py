@@ -1,6 +1,7 @@
 import math
 from copy import copy
 from datetime import time, datetime
+from re import compile, match
 
 
 def time_from_string(t: str) -> time | None:
@@ -59,6 +60,15 @@ def datetime_from_string(t: str) -> datetime:
     return datetime(today.year, today.month, today.day, parsed.hour, parsed.minute, 0, 0)
 
 
+def datetime_from_valid_input(validated: str) -> datetime:
+    def tokenize(t: str) -> list[str]:
+        return t.split(':')
+
+    tokens = tokenize(validated)
+    today = datetime.today()
+    return datetime(today.year, today.month, today.day, hour=int(tokens[0]), minute=int(tokens[1]))
+
+
 # noinspection PyUnusedLocal
 def calc_travel_time(distance: float, rate: int):
     """Compute timedelta (in microseconds) of the time it takes to travel a distance at a given rate"""
@@ -93,3 +103,11 @@ def to_digital_clock(d: datetime) -> str:
     seconds = str(seconds) if seconds > 9 else '0' + str(seconds)
 
     return f'{hours}:{minutes}:{seconds} {am_pm}'
+
+
+def is_time_valid(t: str) -> bool:
+    # match 24hr time format
+    pattern = compile('^([01]?[0-9]|2[0-3]):([0-5][0-9])$')
+    if match(pattern, t):
+        return True
+    return False

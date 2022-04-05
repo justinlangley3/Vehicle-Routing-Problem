@@ -9,6 +9,7 @@ from WGUPS.structures.graph import Graph
 
 @dataclass()
 class Truck:
+    _id: int
     _pids: list[int] = field(default_factory=list)
     _packages: list[Package] = field(default_factory=list)
     _capacity: int = 16
@@ -21,6 +22,13 @@ class Truck:
 
     def __next__(self):
         pass
+
+    def __hash__(self):
+        return self._id
+
+    @property
+    def truck_id(self) -> int:
+        return self._id
 
     @property
     def speed(self) -> int:
