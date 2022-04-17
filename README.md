@@ -34,4 +34,4 @@ A walkthrough of the program:
 
 Example Use-Cases:
   - Small businesses providing their own delivery service
-  - Medium size businesses seeking to cut fuel costs
+  - Medium size businesses seeking to cut fuel costs, delivery time, etc.
