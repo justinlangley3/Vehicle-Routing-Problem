@@ -44,7 +44,6 @@ class Hub:
 
     def __init__(self, addresses: list[Address], graph: Graph, packages: HashTable[int, Package], num_trucks: int = 2):
         # BEGIN Initialize primary data structures
-        # store passed in data
         self._addresses = addresses
         self._graph = graph
         self._packages = packages
@@ -52,7 +51,6 @@ class Hub:
         # END Initialize primary data structures
 
         # BEGIN Initialization of Package Categories
-        # initialize 'views' as empty sets
         self._delayed = set()
         self._dependencies = set()
         self._having_dependency = set()
@@ -61,37 +59,34 @@ class Hub:
         self._standard = set()
         # END Initialization of Package Categories
 
-        # Set a variable containing the hub address, so it can be retrieved easily
+        # A variable containing the hub address, so it can be retrieved easily
         self.HUB = self._addresses[0]
 
-        # BEGIN Initialization of Remaining Packages
+        # A variable for tracking remaining packages
         self._remaining = [package for package in self._packages]
-        # END Initialization of Remaining Packages
 
-        # generate the category data, store in set objects
+        # generates a few statistics about the dataset and displays to the user
         self._generate_views()
 
         # BEGIN Dependency Computations
-        # create an empty list
         self._dependency_chains = list()
         # Compute Dependency Chains,
-        # this is mostly some discrete math on sets occurring here.
+        # mostly a lot of set math occurring here i.e. intersection, union.
         self._compute_dependency_chains()
-        # The method first pulls IDs of all packages with dependencies, as well as dependents,
-        # then, isolates them into groups by how much 'crossover' they have.
-        # (packages with similar dependencies go in same group)
-        # At that point they are assembled into lists of package objects and stored
         # END Dependency Computations
 
         # BEGIN Initialization of Truck Related Data Structures
-        # setup containers for trip data
+
+        # a default dict for holding trips by truck
         self._trips = {}
-        # initialize an empty list for containing last departure time by truck
+
+        # some oddball math for determining how many trips each truck may take, this should be reworked
+        # as it relies on a hard-coded truck capacity
         trip_count = math.ceil(len(self._packages) / len(self._trucks) / 16) + 1
 
-        # ensuring we have a container big enough for both trucks
+        # ensuring we have a container big enough for each truck
         # and that the containers are the same size, so we don't
-        # run into issues running out of indices when looping
+        # run into an IndexError when looping
         dummy = []
         for _ in range(trip_count):
             dummy.append(0.0)
@@ -102,15 +97,17 @@ class Hub:
         # this is required for all trucks to appear at the beginning of the day, so the trips dictionary
         # otherwise, the trips dict will overwrite one trip with another truck's trip data
         # a better solution should be implemented, but it works for the purposes of the task
+        #
+        # Note: This is just bad. Trucks should have unique IDs implemented.
         self._departure_times = [datetime(today.year,
                                           today.month,
                                           today.day,
                                           8, 0, 0, x) for x in range(len(self._trucks))]
+
         # END Initialization of Truck Related Data Structures
 
-        # Begin Load/Delivery Optimization (Core Algorithm)
+        # The call to this method computes all scheduled deliveries per truck with route optimizations
         self._dispatch_trucks()
-        # End Load/Delivery Optimization
 
         # The class object is now ready for user interaction.
 
@@ -480,8 +477,8 @@ class Hub:
         today = datetime.today()  # time of day package updates are received
         update_time = datetime(today.year, today.month, today.day, 10, 20, 0, 0)
 
-        # Initialize a queue to be used as a Priority Queue
-        queue = []  # dummy queue
+        # A dummy queue we'll turn into a Priority Queue
+        queue = []
         for i, truck in enumerate(self._trucks):
             # Clear of any previous iteration
             # ( guarding against loading the same items more than once )
@@ -517,7 +514,8 @@ class Hub:
                 else:
                     # stop loading
                     break
-
+        # Note: This section needs reworked, it's computationally expensive to recompute remaining packages
+        #       on each iteration, requiring O(n) additional complexity each time
         # Finished loading trucks,
         # Clear the remaining package list
         self._remaining.clear()

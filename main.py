@@ -1,6 +1,5 @@
 #
 # Justin A. Langley
-# Student ID: 001036634
 # 2022-03-22
 #
 # noinspection PyUnusedLocal
@@ -32,11 +31,8 @@ def main():
     from WGUPS.core.hub import Hub
     from WGUPS.cli.environment import get_platform
 
-    # Set the interrupt that signals execution halt, depending on platform
-    if 'win' in get_platform().lower():
-        signal.signal(signal.CTRL_C_EVENT, _exit_sig_handler)
-    else:
-        signal.signal(signal.SIGINT, _exit_sig_handler)
+    # Set the interrupt handler for the kill signal
+    signal.signal(signal.SIGINT, _exit_sig_handler)
 
     # function to clear the screen
     # it will often be used where data is presented to mitigate the user from having to scroll
@@ -47,6 +43,11 @@ def main():
 
     # Request data files from the user
     data_locations = ['./data/gps/', './data/package/']
+
+    # handle cross-platform differences in file paths
+    if 'win' in get_platform().lower():
+        dir = __file__[:-7]
+        data_locations = [dir+'data\\gps\\', dir+'data\\package\\']
 
     # Walk the user through selecting a file from each location above.
     # By default, the files in each directory are sorted by most recently modified

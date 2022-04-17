@@ -7,6 +7,10 @@ lookup_err = 'Msg=\'Object was not found\''
 type_err = 'Msg=\'Objects are not of the same type\''
 value_err = 'Msg=\'Value is out of the allowed range\''
 
+#
+#   Note: This whole file needs gutted and proper logging put in place
+#         It had a short-term purpose which has been long-fulfilled
+#
 
 def debug_msg(error: Enum, frame: FrameType) -> str:
     """

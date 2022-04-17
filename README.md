@@ -1,2 +1,2 @@
-# Single-Source-Shortest-Path
-Example implementation for shortest path "traveling salesman" problems
+# Vehicle-Routing-Problem
+This project serves as a demonstration in solving the vehicle routing problem (VRP)

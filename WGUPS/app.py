@@ -53,16 +53,8 @@ class App:
         clear()
 
     def run(self):
-        # Set which kill should be used depending on which OS is running
-        # Windows and Linux/Unix variants all detect a Ctrl-C press as the 'kill' signal
-
-        # However, the way the signal is sent is different.
-        if 'win' in get_platform().lower():
-            # Windows has a Ctrl-C event
-            signal.signal(signal.CTRL_C_EVENT, _signal_handler)
-        else:
-            # Linux/Unix variants uses SIGINT (signal interrupt)
-            signal.signal(signal.SIGINT, _signal_handler)
+        # Set the kill signal event handler
+        signal.signal(signal.SIGINT, _signal_handler)
 
         def display_search_results(results: list[Package] | list[list[Package]]) -> None:
             """Helper for handling if a search result is a list of packages, or multiple lists (one for each truck)"""
@@ -171,7 +163,6 @@ class App:
 
                 # User is looking up all packages at a given time
                 case 'lookup':
-                    from WGUPS.util import time_from_string
                     from .util import is_time_valid
                     search_key = input(f'Please enter a time in 24-hr format {Style.RED2}\'HH:MM\'{Style.END}:\n'
                                        f'{Style.GREEN1}> {Style.END}')
@@ -323,7 +314,7 @@ class App:
                 case 'stats':
                     stats = self.hub.all_trip_distances() + '\n'
                     stats += f'(Note: To see route information for this truck, use the ' \
-                             f'{Style.YELLOW2}`stats -route`{Style.END} command)\n\n'
+                             f'{Style.YELLOW2}`stats route`{Style.END} command)\n\n'
                     stats += f'Press <{Style.RED2}ENTER{Style.END}> to continue ...{Style.GREEN1}\n> {Style.END}'
                     input(stats)
                     clear()

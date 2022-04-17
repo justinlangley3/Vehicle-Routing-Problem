@@ -50,6 +50,12 @@ class HashTable(Generic[Key, Value]):
         # locate appropriate bucket
         b = self._hash(key)
 
+        #
+        #   Note: Bad bug was here, the next block resolves it.
+        #         Prior to the check below, items were having multiple inserts
+        #         We have to check if a key exists before adding the same one willy-nilly
+        #
+
         # walk the chain in the table to see if an item containing the key exists
         chain = self._storage[b].head
         while chain.next:

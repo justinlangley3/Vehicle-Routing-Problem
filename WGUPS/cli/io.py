@@ -25,14 +25,8 @@ def get_last_folder_in_path(path: str) -> str:
         '/home/user/documents/new_folder -> new_folder'
     Note: This works whether the path is terminated in either type of slash
     """
-    from .environment import get_platform
-    platform = get_platform().lower()
-    folders = list()
-    # handle platform specifics
-    if 'lin' in platform.lower() or 'os x' in platform.lower():
-        folders = path.split(sep='/')
-    if 'win' in get_platform().lower():
-        folders = path.split('\\\\')
+    # trim path to the last folder
+    folders = path.split(sep='/')
     folder = folders.pop()
     # check if the 'folder' is an empty string
     if folder == '':
@@ -99,6 +93,7 @@ def request_data_files(relative_paths: list[str], ext: str) -> tuple[Path, ...]:
             pass
 
     def _tabulate_props(_paths: list[Path]) -> str:
+        """Formats columnar data into a table to print"""
         _table = ''
         _rows: list[str] = list()
 
@@ -170,6 +165,7 @@ def _parse_csv(path: Path):
 
 
 def _load_address(address_data: list[str], coordinate: Coordinate) -> Address:
+    """Builds an address object"""
     name = address_data[0]
     street = address_data[1]
     city = address_data[2]
@@ -184,6 +180,7 @@ def _load_address(address_data: list[str], coordinate: Coordinate) -> Address:
 
 
 def build_packages(path: Path, addresses: list[Address]) -> HashTable[int, Package]:
+    """Reads in csv data and performs setup on hash table data structure for holding packages"""
     def lookup_address(container: list[Address], key: list[str]) -> Address | None:
         for address in container:
             members = [address.name, address.street, address.city, address.state, address.postal]
@@ -231,6 +228,7 @@ def build_packages(path: Path, addresses: list[Address]) -> HashTable[int, Packa
 
 
 def build_graph(path: Path) -> tuple[Graph[Address], list[Address]]:
+    """Reads in distance data and performs setup on the graph data structure"""
     #
     # Helper methods
     #

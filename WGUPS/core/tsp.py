@@ -46,7 +46,7 @@ class Solver:
     def _convex_hull(self) -> list[Address] | None:
         """
         Big-O Analysis:
-            O(n^2•logh):
+            O(n^2):
               Jarvis march is O(nlogh), to find the hull. It's output sensitive to h, the number of points on the hull.
               The remainder is an insertion sort, with a cost heuristic to form the full boundary.
               Insertion sort runs in O(n^2), giving use the time complexity annotated above
@@ -78,8 +78,9 @@ class Solver:
         def _jarvis(_points: list[Address]) -> list[Address]:
             """
             Big-O Analysis:
-                O(n•logh), sensitive to h, h is the number of points that form the hull
-
+                O(n•h), n is the number of vertices, h is the number of points that form the hull
+                        if h is shown to be logn, then it performs better than the alternative
+                        Graham's scan algorithm
             Args:
                 _points: list[Address]
 

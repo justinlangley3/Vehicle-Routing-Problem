@@ -43,7 +43,7 @@ class Graph(Generic[T]):
 
         def _add_single_edge(a, b, d):
             # don't add a vertex as its own neighbor,
-            # the distance to itself is simply 0
+            # the distance to itself is simply 0.0
             if a == b:
                 return
             if not self._edges[a][b]:
