@@ -25,7 +25,8 @@ A walkthrough of the program:
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/cli.png)
 5) From the CLI, users can search planned routes by a given truck:
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/planned-trips-truck1.png)
-7) Additionally, lookup features exist by time of day, and specific fields on a package-by-package basis. See /images/lookup-functions for example lookups by package fields.
+7) Additionally, lookup features exist by time of day, and specific fields on a package-by-package basis. See /images/lookup-functions for example lookups by package fields. Lookup by time of day is shown here:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/lookup-by-timeofday.png)
 8) Finally, distance information can be viewed per truck:
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/distance-traveled.png)
 
