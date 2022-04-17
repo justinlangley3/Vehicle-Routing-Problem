@@ -10,6 +10,8 @@ O(n^3) and O(n^2), this analysis includes truck loading and route optimization.
 
 See my paper "vrp-paper.pdf" in this repository for pseudo-code and more implementation details.
 
+Disclaimer: The terminal colors here are optimized for viewing in a Linux environment. Color patterns are not great in Windows at this time.
+
 A walkthrough of the program:
 
 1) Users are greeted with a welcome message:
