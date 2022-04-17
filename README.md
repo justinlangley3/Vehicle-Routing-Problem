@@ -12,13 +12,23 @@ See my paper "vrp-paper.pdf" in this repository for pseudo-code and more impleme
 
 A walkthrough of the program:
 
-1) Users are greeted with a welcome message: ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/welcome.png)
-2) On the next screen, data must be loaded from the /data/ directory: ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/data_onboarding.png?raw=true)
-3) A series of loading/statistics screens are presented: ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/.png?) ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/build-graph.png?) ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/build-packages.png) ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/data_statistics.png?) ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/route_optimization.png)
-4) Afterwards, users are dropped into the CLI: ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/cli.png?raw=true)
-5) From the CLI, users can search planned routes by a given truck: ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/planned-trips-truck1.png)
-6) Additionally, lookup features exist by time of day, and specific fields on a package-by-package basis. See /images/lookup-functions for example lookups by package fields.
-7) Finally, distance information can be viewed per truck: ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/distance-traveled.png)
+1) Users are greeted with a welcome message:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/welcome.png)
+2) On the next screen, data must be loaded from the /data/ directory:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/data_onboarding.png?raw=true)
+3) A series of loading/statistics screens are presented:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/.png?)
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/build-graph.png?)
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/build-packages.png)
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/data_statistics.png?)
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/route_optimization.png)
+4) Afterwards, users are dropped into the CLI:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/cli.png?raw=true)
+5) From the CLI, users can search planned routes by a given truck:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/planned-trips-truck1.png)
+7) Additionally, lookup features exist by time of day, and specific fields on a package-by-package basis. See /images/lookup-functions for example lookups by package fields.
+8) Finally, distance information can be viewed per truck:
+  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/distance-traveled.png)
 
 Example Use-Cases:
   - Small businesses providing their own delivery service
