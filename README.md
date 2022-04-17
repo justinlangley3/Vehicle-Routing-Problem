@@ -17,7 +17,6 @@ A walkthrough of the program:
 2) On the next screen, data must be loaded from the /data/ directory:
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/data_onboarding.png)
 3) A series of loading/statistics screens are presented:
-  - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/.png)
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/build-graph.png)
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/build-packages.png)
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/data_statistics.png)
