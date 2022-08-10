@@ -8,9 +8,7 @@ The benefit to a convex-hull implementation is that it provides something close 
 Overall estimated time complexity of this solution is bounded between:
 O(n^3) and O(n^2), this analysis includes truck loading and route optimization.
 
-## Map Example
-
-## Academic Paper and Write-up
+# Academic Paper and Write-up
 See my paper "vrp-paper.pdf" in this repository for pseudo-code and more implementation details.
 
 ## Mapped Route Example (Google Earth)
