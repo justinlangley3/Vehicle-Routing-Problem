@@ -16,11 +16,9 @@ Page 27 of the paper documents an example delivery route, mapped using Google Ea
 We can see clearly in the example that the program found the convex hull and inserted the inner points between its closest neighbors on the hull, forming the delivery route.
 ![An example route mapped on Google Earth](https://github.com/justinlangley3/Vehicle-Routing-Problem/blob/Vehicle-Routing-Problem/images/route-example-google-earth.png)
 
-## Disclaimer
-The terminal colors here are optimized for viewing in a Linux environment. Color patterns are not great in Windows at this time.
-
 # Example Program Usage
 ## A Walkthrough
+Disclaimer: The terminal colors here are optimized for viewing in a Linux environment. Color patterns are not great in Windows at this time.
 1) Users are greeted with a welcome message:
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/welcome.png)
 2) On the next screen, data must be loaded from the /data/ directory:
