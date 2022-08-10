@@ -20,7 +20,7 @@ We can see clearly in the example that the program found the convex hull and ins
 The terminal colors here are optimized for viewing in a Linux environment. Color patterns are not great in Windows at this time.
 
 # Example Program Usage
-## Walkthrough:
+## A Walkthrough
 1) Users are greeted with a welcome message:
   - ![alt text](https://raw.githubusercontent.com/justinlangley3/Vehicle-Routing-Problem/Vehicle-Routing-Problem/images/welcome.png)
 2) On the next screen, data must be loaded from the /data/ directory:
