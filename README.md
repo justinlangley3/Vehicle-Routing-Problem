@@ -14,7 +14,7 @@ O(n^3) and O(n^2), this analysis includes truck loading and route optimization.
   - ## Mapped Route Example (Google Earth)
     - Page 27 of the paper documents an example delivery route, mapped using Google Earth from the program output.
     - We can see clearly in the example that the program found the convex hull and inserted the inner points between its closest neighbors on the hull, forming the delivery route.
-    - ![An example route mapped on Google Earth](https://github.com/justinlangley3/Vehicle-Routing-Problem/blob/Vehicle-Routing-Problem/images/route-example-google-earth.png)
+    - ![An example route mapped on Google Earth](https://github.com/justinlangley3/Vehicle-Routing-Problem/blob/main/images/route-example-google-earth.png)
 
 # Example Program Usage
   - ## A Walkthrough
